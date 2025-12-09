@@ -18,6 +18,7 @@ import {
 import {
   emitCallStateUpdate,
   emitSwitchEvent,
+  emitQueueUpdate,
 } from "../../sockets/agentGateway.js";
 import {
   muteParticipant,
@@ -120,6 +121,24 @@ export async function executeSwitch(request: SwitchRequest): Promise<SwitchResul
       mode: newMode,
     });
     emitSwitchEvent(callId, direction);
+
+    // Update queue status
+    if (direction === "HUMAN_TO_AI") {
+      // Switching back to AI - clear urgent state
+      emitQueueUpdate({
+        id: callId,
+        mode: "AI_AGENT",
+        isBeingAttended: false,
+        preview: "Returned to AI assistant",
+      });
+    } else {
+      // Switching to human - mark as needing attention (unless already attended)
+      emitQueueUpdate({
+        id: callId,
+        mode: "HUMAN_REP",
+        preview: "Customer requested human assistance",
+      });
+    }
 
     console.log(`✅ Switch complete: ${direction} for call ${callId}`);
 

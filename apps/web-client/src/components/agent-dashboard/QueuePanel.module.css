@@ -334,6 +334,15 @@
   background: rgba(255, 182, 0, 0.15);
 }
 
+.item.beingAttended {
+  background: rgba(0, 212, 170, 0.08);
+  border-color: rgba(0, 212, 170, 0.2);
+}
+
+.item.beingAttended:hover {
+  background: rgba(0, 212, 170, 0.12);
+}
+
 .itemIcon {
   display: flex;
   align-items: center;
@@ -411,6 +420,11 @@
   background: var(--accent-warning);
   color: var(--bg-primary);
   animation: pulse 2s ease-in-out infinite;
+}
+
+.attendedTag {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-primary);
 }
 
 .urgentBadge {

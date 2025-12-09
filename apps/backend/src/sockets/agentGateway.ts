@@ -47,6 +47,15 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
             startTime: session.startTime || Date.now(),
           });
           console.log(`📜 Sent session history: ${session.transcript?.length || 0} messages`);
+          
+          // If this is a HUMAN_REP session, notify queue that agent is attending
+          if (session.mode === 'HUMAN_REP') {
+            emitQueueUpdate({
+              id: callId,
+              isBeingAttended: true,
+            });
+            console.log(`👤 Agent is now attending session ${callId}`);
+          }
         }
       } catch (error) {
         console.error('Failed to send session history:', error);
@@ -228,6 +237,7 @@ export interface QueueItem {
   preview?: string;
   mode: 'AI_AGENT' | 'HUMAN_REP';
   createdAt: number;
+  isBeingAttended?: boolean;
 }
 
 /**

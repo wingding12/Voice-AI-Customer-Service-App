@@ -32,22 +32,28 @@ export default function QueuePanel({
   const [filter, setFilter] = useState<'all' | 'voice' | 'chat' | 'urgent'>('all');
   const [showAlerts, setShowAlerts] = useState(false);
 
+  // Helper to check if item needs immediate attention
+  const needsAttention = (item: QueueItem) => 
+    item.mode === 'HUMAN_REP' && !item.isBeingAttended;
+
   const filteredQueue = queue.filter((item) => {
-    if (filter === 'urgent') return item.mode === 'HUMAN_REP';
+    if (filter === 'urgent') return needsAttention(item);
     if (filter === 'all') return true;
     return item.type === filter;
   });
 
-  // Sort: urgent items first, then by wait time
+  // Sort: urgent (unattended) items first, then attended, then by wait time
   const sortedQueue = [...filteredQueue].sort((a, b) => {
-    if (a.mode === 'HUMAN_REP' && b.mode !== 'HUMAN_REP') return -1;
-    if (a.mode !== 'HUMAN_REP' && b.mode === 'HUMAN_REP') return 1;
+    const aUrgent = needsAttention(a);
+    const bUrgent = needsAttention(b);
+    if (aUrgent && !bUrgent) return -1;
+    if (!aUrgent && bUrgent) return 1;
     return b.waitTime - a.waitTime;
   });
 
   const voiceCount = queue.filter((i) => i.type === 'voice').length;
   const chatCount = queue.filter((i) => i.type === 'chat').length;
-  const urgentCount = queue.filter((i) => i.mode === 'HUMAN_REP').length;
+  const urgentCount = queue.filter((i) => needsAttention(i)).length;
 
   const formatWaitTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -166,38 +172,45 @@ export default function QueuePanel({
             </span>
           </div>
         ) : (
-          sortedQueue.map((item) => (
-            <button
-              key={item.id}
-              className={`${styles.item} ${activeItemId === item.id ? styles.active : ''} ${item.mode === 'HUMAN_REP' ? styles.needsHuman : ''}`}
-              onClick={() => onSelectItem(item.id)}
-            >
-              <div className={styles.itemIcon}>
-                {item.type === 'voice' ? '📞' : '💬'}
-              </div>
-
-              <div className={styles.itemContent}>
-                <div className={styles.itemHeader}>
-                  <span className={styles.itemName}>{item.customerName}</span>
-                  <span className={styles.itemWait}>{formatWaitTime(item.waitTime)}</span>
+          sortedQueue.map((item) => {
+            const isUrgent = needsAttention(item);
+            const isAttended = item.mode === 'HUMAN_REP' && item.isBeingAttended;
+            
+            return (
+              <button
+                key={item.id}
+                className={`${styles.item} ${activeItemId === item.id ? styles.active : ''} ${isUrgent ? styles.needsHuman : ''} ${isAttended ? styles.beingAttended : ''}`}
+                onClick={() => onSelectItem(item.id)}
+              >
+                <div className={styles.itemIcon}>
+                  {item.type === 'voice' ? '📞' : '💬'}
                 </div>
-                <span className={styles.itemPreview}>
-                  {item.preview || (item.customerPhone ? item.customerPhone : 'New conversation')}
-                </span>
-                <div className={styles.itemMeta}>
-                  {item.mode === 'AI_AGENT' ? (
-                    <span className={styles.aiTag}>🤖 AI handling</span>
-                  ) : (
-                    <span className={styles.humanTag}>👤 Needs response</span>
-                  )}
-                </div>
-              </div>
 
-              {item.mode === 'HUMAN_REP' && (
-                <div className={styles.urgentBadge}>!</div>
-              )}
-            </button>
-          ))
+                <div className={styles.itemContent}>
+                  <div className={styles.itemHeader}>
+                    <span className={styles.itemName}>{item.customerName}</span>
+                    <span className={styles.itemWait}>{formatWaitTime(item.waitTime)}</span>
+                  </div>
+                  <span className={styles.itemPreview}>
+                    {item.preview || (item.customerPhone ? item.customerPhone : 'New conversation')}
+                  </span>
+                  <div className={styles.itemMeta}>
+                    {item.mode === 'AI_AGENT' ? (
+                      <span className={styles.aiTag}>🤖 AI handling</span>
+                    ) : isAttended ? (
+                      <span className={styles.attendedTag}>✓ Being attended</span>
+                    ) : (
+                      <span className={styles.humanTag}>👤 Needs response</span>
+                    )}
+                  </div>
+                </div>
+
+                {isUrgent && (
+                  <div className={styles.urgentBadge}>!</div>
+                )}
+              </button>
+            );
+          })
         )}
       </div>
 

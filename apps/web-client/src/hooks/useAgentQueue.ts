@@ -24,6 +24,7 @@ export interface QueueItem {
   createdAt: number;
   lastMessageAt?: number;
   isUrgent?: boolean;
+  isBeingAttended?: boolean;
 }
 
 export interface QueueAlert {
@@ -117,9 +118,11 @@ export function useAgentQueue() {
         const existingItem = prev.find((i) => i.id === update.id);
         const wasAI = existingItem?.mode === 'AI_AGENT';
         const isNowHuman = update.mode === 'HUMAN_REP';
+        const isNowAI = update.mode === 'AI_AGENT';
+        const isBeingAttended = update.isBeingAttended;
         
-        // If switching from AI to HUMAN, create an alert
-        if (wasAI && isNowHuman) {
+        // If switching from AI to HUMAN (and not being attended), create an alert
+        if (wasAI && isNowHuman && !isBeingAttended) {
           const alert: QueueAlert = {
             id: `alert-${Date.now()}`,
             sessionId: update.id,
@@ -143,9 +146,22 @@ export function useAgentQueue() {
           }
         }
         
+        // If switching back to AI or being attended, clear the urgent state
+        // Also remove any related alerts
+        if (isNowAI || isBeingAttended) {
+          setAlerts((prev) => prev.filter((a) => a.sessionId !== update.id));
+        }
+        
         return prev.map((item) =>
           item.id === update.id 
-            ? { ...item, ...update, lastMessageAt: Date.now(), isUrgent: isNowHuman } 
+            ? { 
+                ...item, 
+                ...update, 
+                lastMessageAt: Date.now(), 
+                isUrgent: isNowHuman && !isBeingAttended,
+                // Clear attended state if switching back to AI
+                isBeingAttended: isNowAI ? false : (update.isBeingAttended ?? item.isBeingAttended),
+              } 
             : item
         );
       });
