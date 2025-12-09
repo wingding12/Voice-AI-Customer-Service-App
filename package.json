@@ -3,23 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "description": "Human-in-the-Loop Customer Service Platform with AI Voice Agent and Copilot",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "pnpm -r --parallel run dev",
-    "dev:backend": "pnpm --filter backend dev",
-    "dev:web": "pnpm --filter web-client dev",
-    "build": "pnpm -r run build",
-    "db:generate": "pnpm --filter database generate",
-    "db:migrate": "pnpm --filter database migrate",
-    "db:seed": "pnpm --filter database seed",
-    "db:studio": "pnpm --filter database studio",
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:backend": "npm run dev -w backend",
+    "dev:web": "npm run dev -w web-client",
+    "build": "npm run build --workspaces --if-present",
+    "db:generate": "npm run generate -w database",
+    "db:migrate": "npm run migrate -w database",
+    "db:seed": "npm run seed -w database",
+    "db:studio": "npm run studio -w database",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "clean": "pnpm -r run clean && rm -rf node_modules"
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0"
+    "node": ">=18.0.0"
+  }
 }
-

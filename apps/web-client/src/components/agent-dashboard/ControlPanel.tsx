@@ -1,14 +1,13 @@
 import type { CallState } from '../../hooks/useCallState';
-import { useCallState } from '../../hooks/useCallState';
 import styles from './ControlPanel.module.css';
 
 interface ControlPanelProps {
   callState: CallState;
   isConnected: boolean;
+  onSwitch: (direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI') => void;
 }
 
-export default function ControlPanel({ callState, isConnected }: ControlPanelProps) {
-  const { requestSwitch } = useCallState();
+export default function ControlPanel({ callState, isConnected, onSwitch }: ControlPanelProps) {
   
   const { status, mode } = callState;
   const isActive = status === 'active';
@@ -16,7 +15,7 @@ export default function ControlPanel({ callState, isConnected }: ControlPanelPro
   
   const handleSwitch = () => {
     const direction = isAI ? 'AI_TO_HUMAN' : 'HUMAN_TO_AI';
-    requestSwitch(direction);
+    onSwitch(direction);
   };
 
   return (

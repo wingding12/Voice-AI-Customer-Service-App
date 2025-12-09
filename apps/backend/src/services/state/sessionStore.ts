@@ -32,8 +32,8 @@ const SESSION_PREFIX = 'session:';
 const SESSION_TTL = 60 * 60 * 2; // 2 hours
 
 export async function createSession(callId: string, session: CallSession): Promise<void> {
-  const redis = getRedis();
-  await redis.setex(
+  const client = getRedis();
+  await client.setex(
     `${SESSION_PREFIX}${callId}`,
     SESSION_TTL,
     JSON.stringify(session)
@@ -41,8 +41,8 @@ export async function createSession(callId: string, session: CallSession): Promi
 }
 
 export async function getSession(callId: string): Promise<CallSession | null> {
-  const redis = getRedis();
-  const data = await redis.get(`${SESSION_PREFIX}${callId}`);
+  const client = getRedis();
+  const data = await client.get(`${SESSION_PREFIX}${callId}`);
   return data ? JSON.parse(data) : null;
 }
 
@@ -59,8 +59,8 @@ export async function updateSession(
 }
 
 export async function deleteSession(callId: string): Promise<void> {
-  const redis = getRedis();
-  await redis.del(`${SESSION_PREFIX}${callId}`);
+  const client = getRedis();
+  await client.del(`${SESSION_PREFIX}${callId}`);
 }
 
 export async function appendTranscript(

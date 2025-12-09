@@ -14,7 +14,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.3",
     "socket.io-client": "^4.7.4",
-    "shared-types": "workspace:*"
+    "shared-types": "*"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",
@@ -24,4 +24,3 @@
     "vite": "^5.0.12"
   }
 }
-

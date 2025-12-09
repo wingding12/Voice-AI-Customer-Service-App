@@ -33,13 +33,13 @@ A sophisticated Human-in-the-Loop (HITL) customer service platform featuring AI 
 │   ├── database/         # Prisma ORM & migrations
 │   └── shared-types/     # Shared TypeScript interfaces
 ├── docker-compose.yml    # Local dev services
-└── pnpm-workspace.yaml   # Monorepo config
+└── package.json          # npm workspaces config
 ```
 
 ## Prerequisites
 
 - Node.js 18+
-- pnpm 8+
+- npm 9+
 - Docker & Docker Compose
 
 ## Getting Started
@@ -49,41 +49,41 @@ A sophisticated Human-in-the-Loop (HITL) customer service platform featuring AI 
 ```bash
 git clone <repo-url>
 cd customer-service-platform
-pnpm install
+npm install
 ```
 
 ### 2. Environment Setup
 
 ```bash
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your API keys (optional for Phase 0)
 ```
 
 ### 3. Start Local Services
 
 ```bash
-# Start PostgreSQL and Redis
-pnpm docker:up
+# Start Docker Desktop first, then:
+npm run docker:up
 
 # Generate Prisma client
-pnpm db:generate
+npm run db:generate
 
 # Run migrations
-pnpm db:migrate
+npm run db:migrate
 
 # Seed test data
-pnpm db:seed
+npm run db:seed
 ```
 
 ### 4. Run Development Servers
 
 ```bash
 # Start both backend and frontend
-pnpm dev
+npm run dev
 
 # Or run separately:
-pnpm dev:backend  # http://localhost:3001
-pnpm dev:web      # http://localhost:5173
+npm run dev:backend  # http://localhost:3001
+npm run dev:web      # http://localhost:5173
 ```
 
 ## API Endpoints
@@ -101,8 +101,13 @@ pnpm dev:web      # http://localhost:5173
 
 See `.env.example` for all required variables:
 
+**Required:**
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `REDIS_URL` - Redis connection string
+
+**Optional (for full features):**
+
 - `TELNYX_API_KEY` - Telnyx API credentials
 - `RETELL_API_KEY` - Retell AI API key
 - `ASSEMBLYAI_API_KEY` - AssemblyAI API key
@@ -113,10 +118,11 @@ See `.env.example` for all required variables:
 ### Commands
 
 ```bash
-pnpm dev           # Start all services
-pnpm build         # Build all packages
-pnpm db:studio     # Open Prisma Studio
-pnpm docker:down   # Stop Docker services
+npm run dev           # Start all services
+npm run build         # Build all packages
+npm run db:studio     # Open Prisma Studio
+npm run docker:down   # Stop Docker services
+npm run clean         # Remove node_modules
 ```
 
 ### Testing Switches

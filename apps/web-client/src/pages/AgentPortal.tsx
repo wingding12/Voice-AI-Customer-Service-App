@@ -10,7 +10,7 @@ import styles from './AgentPortal.module.css';
 
 export default function AgentPortal() {
   const { isConnected } = useSocket();
-  const { callState, transcript, suggestions } = useCallState();
+  const { callState, transcript, suggestions, requestSwitch } = useCallState();
   const [agentId] = useState('AGENT_001'); // TODO: Get from auth
 
   return (
@@ -38,7 +38,8 @@ export default function AgentPortal() {
           <LiveTranscript entries={transcript} />
           <ControlPanel 
             callState={callState} 
-            isConnected={isConnected} 
+            isConnected={isConnected}
+            onSwitch={requestSwitch}
           />
         </section>
 
