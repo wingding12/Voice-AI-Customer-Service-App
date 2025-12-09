@@ -26,7 +26,7 @@ A sophisticated **Human-in-the-Loop (HITL)** customer service platform featuring
 | 🤖 **AI Voice Agent**     | Powered by Retell AI for low-latency voice conversations | ✅ Integrated |
 | 👤 **Copilot Assistant**  | Real-time suggestions sidebar for human representatives  | ✅ Integrated |
 | 🔄 **Seamless Switching** | Toggle between AI and human without dropping calls       | ✅ Integrated |
-| 💬 **Multi-Channel**      | Support for both voice calls and text chat               | 🔜 Phase 8    |
+| 💬 **Multi-Channel**      | Support for both voice calls and text chat               | ✅ Integrated |
 | 📊 **Diagnostics**        | Track switch events and conversation analytics           | 🔜 Phase 9    |
 | 🎯 **Agent Dashboard**    | Real-time transcript, copilot suggestions, control panel | ✅ UI Ready   |
 | 🗣️ **Customer Widget**    | Chat window and voice call button for customers          | ✅ UI Ready   |
@@ -113,7 +113,8 @@ Senpilot-Customer-Service-App/
 │   │   │   ├── controllers/
 │   │   │   │   ├── callController.ts    # Telnyx webhook handler
 │   │   │   │   ├── retellController.ts  # Retell AI webhook handler
-│   │   │   │   └── switchController.ts  # AI↔Human switch API
+│   │   │   │   ├── switchController.ts  # AI↔Human switch API
+│   │   │   │   └── chatController.ts    # Text chat API
 │   │   │   ├── services/
 │   │   │   │   ├── state/
 │   │   │   │   │   └── sessionStore.ts   # Redis session management
@@ -121,6 +122,8 @@ Senpilot-Customer-Service-App/
 │   │   │   │   │   ├── telnyxClient.ts   # TeXML builder + Telnyx API
 │   │   │   │   │   ├── retellClient.ts   # Retell AI SDK wrapper
 │   │   │   │   │   └── switchService.ts  # AI↔Human handoff logic
+│   │   │   │   ├── chat/
+│   │   │   │   │   └── chatService.ts    # Chat message processing
 │   │   │   │   └── copilot/
 │   │   │   │       ├── assemblyaiClient.ts  # Intent detection, sentiment
 │   │   │   │       ├── ragService.ts        # pgvector knowledge search
@@ -389,16 +392,19 @@ interface CopilotSuggestion {
 
 ## API Endpoints
 
-| Endpoint                          | Method | Description              | Status         |
-| --------------------------------- | ------ | ------------------------ | -------------- |
-| `/health`                         | GET    | Health check             | ✅ Implemented |
-| `/webhooks/telnyx`                | POST   | Telnyx call events       | ✅ Implemented |
-| `/webhooks/telnyx/gather`         | POST   | DTMF digit collection    | ✅ Implemented |
-| `/webhooks/retell`                | POST   | Retell transcript events | ✅ Implemented |
-| `/api/switch`                     | POST   | Toggle AI/Human mode     | ✅ Implemented |
-| `/api/switch/stats/:callId`       | GET    | Get switch statistics    | ✅ Implemented |
-| `/api/switch/can-switch/:id/:dir` | GET    | Check if switch allowed  | ✅ Implemented |
-| `/api/chat`                       | POST   | Handle chat messages     | 🔜 Phase 8     |
+| Endpoint                          | Method | Description                 | Status         |
+| --------------------------------- | ------ | --------------------------- | -------------- |
+| `/health`                         | GET    | Health check                | ✅ Implemented |
+| `/webhooks/telnyx`                | POST   | Telnyx call events          | ✅ Implemented |
+| `/webhooks/telnyx/gather`         | POST   | DTMF digit collection       | ✅ Implemented |
+| `/webhooks/retell`                | POST   | Retell transcript events    | ✅ Implemented |
+| `/api/switch`                     | POST   | Toggle AI/Human mode        | ✅ Implemented |
+| `/api/switch/stats/:callId`       | GET    | Get switch statistics       | ✅ Implemented |
+| `/api/switch/can-switch/:id/:dir` | GET    | Check if switch allowed     | ✅ Implemented |
+| `/api/chat`                       | POST   | Customer sends chat message | ✅ Implemented |
+| `/api/chat/respond`               | POST   | Human rep sends response    | ✅ Implemented |
+| `/api/chat/end`                   | POST   | End a chat session          | ✅ Implemented |
+| `/api/chat/switch`                | POST   | Switch chat AI↔Human mode   | ✅ Implemented |
 
 ---
 
@@ -696,6 +702,78 @@ Frontend updates: mode = HUMAN_REP
 
 ---
 
+## Text Chat API
+
+Unified chat endpoint supporting both AI and Human modes.
+
+### Chat Endpoints
+
+| Endpoint            | Method | Body                       | Response                             |
+| ------------------- | ------ | -------------------------- | ------------------------------------ |
+| `/api/chat`         | POST   | `{ message, sessionId? }`  | `{ reply, sessionId, suggestions? }` |
+| `/api/chat/respond` | POST   | `{ sessionId, message }`   | `{ success: true }`                  |
+| `/api/chat/end`     | POST   | `{ sessionId }`            | `{ success: true }`                  |
+| `/api/chat/switch`  | POST   | `{ sessionId, direction }` | `{ success, newMode, timestamp }`    |
+
+### Chat Flow
+
+```
+Customer sends message
+         ↓
+┌─────────────────────────────────┐
+│ 1. Get or create session        │
+│ 2. Add to transcript            │
+│ 3. Emit to agent dashboard      │
+└─────────────────────────────────┘
+         ↓
+    Is mode AI?
+    /         \
+   Yes         No
+   ↓           ↓
+┌────────┐  ┌────────────────────┐
+│ Search │  │ Queue for human    │
+│ KB +   │  │ "Please wait..."   │
+│ Reply  │  └────────────────────┘
+└────────┘
+         ↓
+   Trigger copilot analysis
+```
+
+### Switch Commands (Auto-detected)
+
+| Customer Message                          | Action                 |
+| ----------------------------------------- | ---------------------- |
+| `/human`, "speak to agent", "real person" | Switch to human mode   |
+| `/ai`, "back to bot"                      | Switch back to AI mode |
+
+### Example Usage
+
+```bash
+# Start a chat
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is your return policy?"}'
+
+# Response:
+# {
+#   "reply": "Based on our return policy information...",
+#   "sessionId": "chat-abc123",
+#   "suggestions": [...]
+# }
+
+# Continue conversation
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "I want to speak to a human", "sessionId": "chat-abc123"}'
+
+# Human rep responds
+curl -X POST http://localhost:3001/api/chat/respond \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId": "chat-abc123", "message": "Hi, I can help you with that."}'
+```
+
+---
+
 ## Development Phases
 
 | Phase | Name               | Status      | Description                             |
@@ -708,8 +786,8 @@ Frontend updates: mode = HUMAN_REP
 | 5     | Copilot Brain      | ✅ Complete | AssemblyAI, pgvector RAG, suggestions   |
 | 6     | Frontend Polish    | ⏳ Pending  | UI refinements, animations              |
 | 7     | The Switch         | ✅ Complete | Real-time AI↔Human handoff              |
-| 8     | Text Chat          | 🔜 Next     | Chat endpoint, unified messages         |
-| 9     | Diagnostics        | ⏳ Pending  | Analytics, switch tracking              |
+| 8     | Text Chat          | ✅ Complete | Chat endpoint, unified messages         |
+| 9     | Diagnostics        | 🔜 Next     | Analytics, switch tracking              |
 
 ---
 
