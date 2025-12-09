@@ -258,6 +258,11 @@ async function handleCallHangup(
   // Get final session state
   const session = await getSession(call_session_id);
 
+  // Update Redis session status to ended (prevents further switches)
+  if (session) {
+    await updateSession(call_session_id, { status: "ended" });
+  }
+
   // Update database
   try {
     await prisma.call.update({
@@ -273,8 +278,6 @@ async function handleCallHangup(
   } catch (error) {
     console.error("Failed to update call record:", error);
   }
-
-  // Session cleanup is handled by TTL in Redis
 
   // Notify frontend that call ended
   emitCallEnd(call_session_id);

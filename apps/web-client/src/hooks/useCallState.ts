@@ -60,13 +60,20 @@ export function useCallState() {
 
     // Call state events
     socket.on('call:state_update', (data: CallStateUpdate) => {
-      setCallState((prev) => ({
-        ...prev,
-        callId: data.callId,
-        status: 'active',
-        activeSpeaker: data.activeSpeaker,
-        mode: data.mode,
-      }));
+      setCallState((prev) => {
+        // Don't update if call has already ended (prevents race conditions)
+        if (prev.status === 'ended') {
+          return prev;
+        }
+        return {
+          ...prev,
+          callId: data.callId,
+          status: 'active',
+          activeSpeaker: data.activeSpeaker,
+          mode: data.mode,
+          startTime: data.startTime ?? prev.startTime,
+        };
+      });
     });
 
     socket.on('transcript:update', (data: TranscriptEntry) => {

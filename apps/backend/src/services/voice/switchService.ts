@@ -146,6 +146,9 @@ export async function executeSwitch(request: SwitchRequest): Promise<SwitchResul
  * 1. Mute the AI agent (or disconnect Retell)
  * 2. Unmute the human rep
  * 3. Play transition message
+ *
+ * NOTE: Full conference bridge requires Telnyx conference setup during call init.
+ * Current implementation uses Retell disconnection as the primary switch mechanism.
  */
 async function switchToHuman(
   callId: string,
@@ -154,6 +157,8 @@ async function switchToHuman(
   const conferenceId = metadata.conferenceId as string | undefined;
   const callControlId = metadata.callControlId as string | undefined;
   const retellCallId = metadata.retellCallId as string | undefined;
+
+  console.log(`🔄 switchToHuman: callId=${callId}, conferenceId=${conferenceId}, retellCallId=${retellCallId}`);
 
   // If using Retell, end the Retell call leg
   if (hasRetellConfig() && retellCallId) {
@@ -167,6 +172,7 @@ async function switchToHuman(
   }
 
   // If in a conference, manage participants
+  // NOTE: Conference bridge is optional - works without if using Retell transfer pattern
   if (conferenceId && callControlId) {
     try {
       // Unmute human rep (they were listening muted)
@@ -174,6 +180,8 @@ async function switchToHuman(
     } catch (error) {
       console.warn("Failed to unmute participant:", error);
     }
+  } else if (!conferenceId) {
+    console.log("ℹ️ No conference bridge configured - using Retell transfer pattern");
   }
 
   // Play transition message to customer
@@ -197,6 +205,9 @@ async function switchToHuman(
  * 1. Mute the human rep
  * 2. Re-activate AI agent (reconnect Retell or unmute)
  * 3. Play transition message
+ *
+ * NOTE: Reconnecting to Retell mid-call requires initiating a new call leg.
+ * This is a limitation of the current architecture.
  */
 async function switchToAI(
   callId: string,
@@ -204,6 +215,8 @@ async function switchToAI(
 ): Promise<void> {
   const conferenceId = metadata.conferenceId as string | undefined;
   const callControlId = metadata.callControlId as string | undefined;
+
+  console.log(`🔄 switchToAI: callId=${callId}, conferenceId=${conferenceId}`);
 
   // If in a conference, manage participants
   if (conferenceId && callControlId) {
@@ -213,6 +226,9 @@ async function switchToAI(
     } catch (error) {
       console.warn("Failed to mute participant:", error);
     }
+  } else if (!conferenceId) {
+    console.log("ℹ️ No conference bridge configured - human→AI switch is mode-only");
+    console.log("   Full AI reconnection requires new Retell call leg (not implemented)");
   }
 
   // Play transition message to customer
@@ -227,10 +243,6 @@ async function switchToAI(
       console.warn("Failed to play transition message:", error);
     }
   }
-
-  // Note: Re-connecting to Retell would require initiating a new call leg
-  // For now, the AI mode is set and the human rep has been muted
-  // Full Retell reconnection would be implemented based on specific Retell API patterns
 }
 
 /**
@@ -293,10 +305,25 @@ export async function canSwitch(
   callId: string,
   direction: "AI_TO_HUMAN" | "HUMAN_TO_AI"
 ): Promise<{ allowed: boolean; reason?: string }> {
+  // Check Redis session first
   const session = await getSession(callId);
 
   if (!session) {
-    return { allowed: false, reason: "Session not found" };
+    // Fallback: check database if session expired from Redis
+    const dbCall = await prisma.call.findUnique({
+      where: { id: callId },
+      select: { status: true, mode: true },
+    });
+
+    if (!dbCall) {
+      return { allowed: false, reason: "Call not found" };
+    }
+
+    if (dbCall.status === "ENDED") {
+      return { allowed: false, reason: "Call has ended" };
+    }
+
+    return { allowed: false, reason: "Session expired" };
   }
 
   if (session.status !== "active") {

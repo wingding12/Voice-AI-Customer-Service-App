@@ -1,5 +1,6 @@
 import type { Server as SocketIOServer, Socket } from 'socket.io';
 import type { CopilotSuggestion, CallStateUpdate, TranscriptEntry } from 'shared-types';
+import { executeSwitch } from '../services/voice/switchService.js';
 
 let io: SocketIOServer | null = null;
 
@@ -37,16 +38,25 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
     });
 
     // Handle switch request from agent dashboard
-    socket.on('call:request_switch', (data: { callId: string; direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI' }) => {
+    socket.on('call:request_switch', async (data: { callId: string; direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI' }) => {
       console.log(`🔄 Switch requested: ${data.direction} for call ${data.callId}`);
-      // TODO: Implement actual switch logic with Telnyx/Retell
-      // For now, emit the switch event to update UI (broadcast to all in call room)
-      if (io) {
-        io.to(callRoom(data.callId)).emit('call:switch', { 
-          direction: data.direction, 
-          timestamp: Date.now() 
+      
+      // Execute the actual switch via switchService
+      const result = await executeSwitch({
+        callId: data.callId,
+        direction: data.direction,
+        reason: 'AGENT_DASHBOARD',
+      });
+
+      if (!result.success) {
+        console.error(`❌ Switch failed: ${result.error}`);
+        // Notify the requesting socket of the failure
+        socket.emit('switch:error', { 
+          callId: data.callId, 
+          error: result.error 
         });
       }
+      // Success case: executeSwitch already emits events via emitCallStateUpdate and emitSwitchEvent
     });
     
     socket.on('disconnect', () => {
