@@ -1,5 +1,5 @@
 import type { Server as SocketIOServer, Socket } from 'socket.io';
-import type { CopilotSuggestion, CallStateUpdate } from 'shared-types';
+import type { CopilotSuggestion, CallStateUpdate, TranscriptEntry } from 'shared-types';
 
 let io: SocketIOServer | null = null;
 
@@ -75,7 +75,7 @@ export function emitCallStateUpdate(callId: string, update: CallStateUpdate): vo
 
 export function emitTranscriptUpdate(
   callId: string, 
-  entry: { speaker: string; text: string; timestamp: number }
+  entry: TranscriptEntry
 ): void {
   if (!io) {
     console.warn('Socket.io not initialized');

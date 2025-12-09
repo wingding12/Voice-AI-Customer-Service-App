@@ -36,6 +36,7 @@ export interface CallStateUpdate {
   activeSpeaker: SpeakerType;
   isMuted: boolean;
   mode: CallMode;
+  startTime?: number; // Backend's authoritative start time (for duration sync)
 }
 
 export interface SwitchEvent {
