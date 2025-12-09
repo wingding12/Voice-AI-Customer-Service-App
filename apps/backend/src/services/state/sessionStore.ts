@@ -66,12 +66,13 @@ export async function deleteSession(callId: string): Promise<void> {
 export async function appendTranscript(
   callId: string, 
   speaker: 'AI' | 'HUMAN' | 'CUSTOMER',
-  text: string
+  text: string,
+  timestamp?: number
 ): Promise<void> {
   const session = await getSession(callId);
   if (!session) return;
   
-  const entry = { speaker, text, timestamp: Date.now() };
+  const entry = { speaker, text, timestamp: timestamp ?? Date.now() };
   session.transcript.push(entry);
   await createSession(callId, session);
 }

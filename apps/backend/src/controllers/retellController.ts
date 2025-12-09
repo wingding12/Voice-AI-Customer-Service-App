@@ -255,8 +255,8 @@ async function handleTranscriptUpdate(
   // Map Retell role to our speaker type
   const speaker = role === "agent" ? "AI" : "CUSTOMER";
 
-  // Append to session transcript
-  await appendTranscript(call_id, speaker as "AI" | "CUSTOMER", content);
+  // Append to session transcript (use Retell's timestamp for consistency)
+  await appendTranscript(call_id, speaker as "AI" | "CUSTOMER", content, timestamp);
 
   // Emit to frontend for live transcript display
   emitTranscriptUpdate(call_id, {
