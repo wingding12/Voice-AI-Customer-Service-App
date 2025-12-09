@@ -10,6 +10,7 @@ import { switchController } from "./controllers/switchController.js";
 import { chatController } from "./controllers/chatController.js";
 import { analyticsController } from "./controllers/analyticsController.js";
 import { copilotController } from "./controllers/copilotController.js";
+import { voiceController } from "./controllers/voiceController.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/switch", switchController);       // AI↔Human switching
 app.use("/api/chat", chatController);           // Text chat
 app.use("/api/analytics", analyticsController); // Diagnostics & metrics
 app.use("/api/copilot", copilotController);     // AI copilot & knowledge base
+app.use("/api/voice", voiceController);         // Voice calls (Retell AI)
 
 // Webhook Routes
 app.use("/webhooks/telnyx", callController); // Telnyx call events
