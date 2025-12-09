@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Senpilot - AI Customer Service Platform</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --accent: #00d4aa;
+      --accent-secondary: #7c3aed;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8888a0;
+      --border: #2a2a3a;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+    
+    .slideshow {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+    
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .slide.active {
+      display: flex;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-content {
+      max-width: 1200px;
+      width: 100%;
+    }
+    
+    h1 {
+      font-size: 4rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    h2 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--text-primary);
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    
+    p {
+      font-size: 1.25rem;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    
+    .subtitle {
+      font-size: 1.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .feature-card h4 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-card p {
+      font-size: 1rem;
+      margin-bottom: 0;
+    }
+    
+    .tech-stack {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+    }
+    
+    .tech-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    
+    .tech-item .icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .tech-item .name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    
+    .tech-item .purpose {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .architecture-diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--text-secondary);
+    }
+    
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+    }
+    
+    .benefit-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+    
+    .benefit-section h4 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    
+    .benefit-list {
+      list-style: none;
+    }
+    
+    .benefit-list li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+      color: var(--text-secondary);
+    }
+    
+    .benefit-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+    
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+    
+    .roadmap-phase {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+    
+    .roadmap-phase h4 {
+      font-size: 1.125rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    
+    .roadmap-phase ul {
+      list-style: none;
+    }
+    
+    .roadmap-phase li {
+      padding: 0.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    
+    .navigation {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      background: var(--bg-card);
+      padding: 0.75rem 1.5rem;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+    }
+    
+    .nav-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    .nav-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg-dark);
+    }
+    
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      min-width: 60px;
+      text-align: center;
+    }
+    
+    .highlight {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    
+    .center-content {
+      text-align: center;
+    }
+    
+    .logo {
+      font-size: 6rem;
+      margin-bottom: 1rem;
+    }
+    
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+    
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+    
+    .code-block {
+      background: #1a1a2e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+    
+    .code-block .comment { color: #6a9955; }
+    .code-block .keyword { color: #c586c0; }
+    .code-block .string { color: #ce9178; }
+    .code-block .number { color: #b5cea8; }
+  </style>
+</head>
+<body>
+  <div class="slideshow">
+    
+    <!-- Slide 1: Title -->
+    <div class="slide active center-content">
+      <div class="slide-content">
+        <div class="logo">◈</div>
+        <h1>Senpilot</h1>
+        <p class="subtitle">AI-Powered Customer Service Platform</p>
+        <p style="font-size: 1.125rem;">Human-in-the-Loop Architecture for Seamless AI + Human Support</p>
+      </div>
+    </div>
+    
+    <!-- Slide 2: The Problem -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>The Problem</h2>
+        <div class="two-column">
+          <div>
+            <h3>Traditional Options</h3>
+            <div class="feature-card" style="margin-bottom: 1rem;">
+              <h4>🤖 Pure AI</h4>
+              <p>Fast but impersonal. Can't handle complex issues. Customers get frustrated.</p>
+            </div>
+            <div class="feature-card">
+              <h4>👤 Pure Human</h4>
+              <p>Personal but expensive. Long wait times. Hard to scale.</p>
+            </div>
+          </div>
+          <div>
+            <h3>Our Solution</h3>
+            <div class="feature-card" style="border-color: var(--accent);">
+              <h4>✨ Human-in-the-Loop</h4>
+              <p>AI handles routine inquiries instantly. Humans step in for complex cases with full context. Switch happens in real-time without interruption.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 3: Key Features -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Key Features</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h4>AI Voice Agent</h4>
+            <p>Ultra-low latency voice conversations powered by Retell AI. Handles interruptions naturally.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h4>AI Text Chat</h4>
+            <p>Gemini-powered chat with context memory. Knowledge base integration via RAG.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">👤</div>
+            <h4>AI Copilot</h4>
+            <p>Real-time suggestions for agents. Sentiment detection and policy snippets.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔄</div>
+            <h4>Seamless Switching</h4>
+            <p>One-click handoff between AI and human. No call drops, full context preserved.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h4>Live Analytics</h4>
+            <p>Real-time metrics, switch tracking, and performance dashboards.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🚨</div>
+            <h4>Smart Escalation</h4>
+            <p>Auto-detect emergencies and frustrated customers. Immediate human routing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 4: Architecture -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Architecture</h2>
+        <div class="architecture-diagram">
+┌───────────────────────────────────────────────────────────────┐
+│                        CUSTOMER                                │
+│                   (Phone / Browser Chat)                       │
+└───────────────────────────────────────────────────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+    ┌─────────────────┐         ┌─────────────────┐
+    │   VOICE CALL    │         │   TEXT CHAT     │
+    │   Telnyx +      │         │   Gemini AI     │
+    │   Retell AI     │         │                 │
+    └────────┬────────┘         └────────┬────────┘
+             └───────────┬───────────────┘
+                         ▼
+              ┌─────────────────────┐
+              │    UNIFIED BACKEND   │  ◄── Node.js + TypeScript
+              │                      │
+              │  • Redis Sessions    │
+              │  • Copilot Engine    │
+              │  • Switch Controller │
+              │  • PostgreSQL + RAG  │
+              └──────────┬───────────┘
+                         │ Socket.io
+                         ▼
+              ┌─────────────────────┐
+              │   AGENT DASHBOARD    │  ◄── React + Vite
+              │   • Live Transcript  │
+              │   • Copilot Sidebar  │
+              │   • Queue Management │
+              └─────────────────────┘
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 5: The Conference Bridge -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>The Conference Bridge Pattern</h2>
+        <p>The secret to seamless switching — no call drops, ever.</p>
+        <div class="two-column">
+          <div>
+            <h3>Traditional Forwarding ❌</h3>
+            <div class="feature-card">
+              <p>Customer → AI → <span style="color: #ef4444;">DISCONNECT</span> → Human</p>
+              <p style="color: #ef4444; margin-bottom: 0;">Call drops, context lost, customer frustrated</p>
+            </div>
+          </div>
+          <div>
+            <h3>Our Approach ✅</h3>
+            <div class="feature-card" style="border-color: var(--accent);">
+              <p>1. Customer joins <span class="highlight">conference room</span></p>
+              <p>2. AI Agent joins (speaking)</p>
+              <p>3. Human Rep joins (muted, listening)</p>
+              <p>4. Switch = <span class="highlight">Mute/Unmute</span></p>
+              <p style="color: var(--accent); margin-bottom: 0;">Zero interruption, full context!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 6: Tech Stack -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Technology Stack</h2>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <div class="icon">⚡</div>
+            <div class="name">Node.js</div>
+            <div class="purpose">Backend API</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">⚛️</div>
+            <div class="name">React</div>
+            <div class="purpose">Frontend UI</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">🐘</div>
+            <div class="name">PostgreSQL</div>
+            <div class="purpose">Database + Vector</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">🔴</div>
+            <div class="name">Redis</div>
+            <div class="purpose">Session State</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">🎤</div>
+            <div class="name">Retell AI</div>
+            <div class="purpose">Voice Agent</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">✨</div>
+            <div class="name">Gemini</div>
+            <div class="purpose">Text Chat AI</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">📞</div>
+            <div class="name">Telnyx</div>
+            <div class="purpose">Telephony</div>
+          </div>
+          <div class="tech-item">
+            <div class="icon">🔌</div>
+            <div class="name">Socket.io</div>
+            <div class="purpose">Real-time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 7: Use Case -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Use Case: Utility Company</h2>
+        <p>Senpilot is specialized for utility customer service</p>
+        <div class="features-grid">
+          <div class="feature-card">
+            <h4>💵 Billing Inquiries</h4>
+            <p>AI explains charges, compares usage, offers payment options automatically.</p>
+          </div>
+          <div class="feature-card">
+            <h4>⚡ Outage Reports</h4>
+            <p>AI checks outage map, provides ETR, creates service tickets.</p>
+          </div>
+          <div class="feature-card">
+            <h4>🚨 Gas Emergencies</h4>
+            <p>AI detects safety keywords → immediate escalation + safety instructions.</p>
+          </div>
+          <div class="feature-card">
+            <h4>💳 Payment Plans</h4>
+            <p>AI offers arrangements, LIHEAP info, assistance programs.</p>
+          </div>
+          <div class="feature-card">
+            <h4>🏠 Service Changes</h4>
+            <p>Start, stop, transfer service — AI handles the routine flow.</p>
+          </div>
+          <div class="feature-card">
+            <h4>😤 Frustrated Customers</h4>
+            <p>Copilot alerts agent, suggests empathy + goodwill credits.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 8: Benefits -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Benefits</h2>
+        <div class="benefits-grid">
+          <div class="benefit-section">
+            <h4>👤 For Customers</h4>
+            <ul class="benefit-list">
+              <li>No wait times — AI answers instantly</li>
+              <li>24/7 availability</li>
+              <li>Seamless escalation when needed</li>
+              <li>Consistent service quality</li>
+            </ul>
+          </div>
+          <div class="benefit-section">
+            <h4>🎧 For Agents</h4>
+            <ul class="benefit-list">
+              <li>AI Copilot provides answers instantly</li>
+              <li>Full context on arrival — no repeats</li>
+              <li>Handle only complex, meaningful cases</li>
+              <li>Reduced burnout</li>
+            </ul>
+          </div>
+          <div class="benefit-section">
+            <h4>🏢 For Business</h4>
+            <ul class="benefit-list">
+              <li>60-70% AI resolution rate</li>
+              <li>Dramatic cost savings</li>
+              <li>Scale during volume spikes</li>
+              <li>Full compliance & audit trails</li>
+            </ul>
+          </div>
+          <div class="benefit-section">
+            <h4>📊 ROI Example</h4>
+            <ul class="benefit-list">
+              <li>100 agents × $45K = $4.5M/year</li>
+              <li>With 70% AI: 30 agents = $1.35M</li>
+              <li style="color: var(--accent);">Potential savings: ~$3M+/year</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 9: Stats -->
+    <div class="slide">
+      <div class="slide-content center-content">
+        <h2>By The Numbers</h2>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-value">&lt;500ms</div>
+            <div class="stat-label">Voice Response Time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">70%</div>
+            <div class="stat-label">AI Resolution Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Dropped Handoffs</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">24/7</div>
+            <div class="stat-label">Availability</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 10: Roadmap -->
+    <div class="slide">
+      <div class="slide-content">
+        <h2>Future Roadmap</h2>
+        <div class="roadmap">
+          <div class="roadmap-phase">
+            <h4>📅 v1.1 (Q1)</h4>
+            <ul>
+              <li>🎤 Browser voice calls (WebRTC)</li>
+              <li>🌐 Customer self-service portal</li>
+              <li>📱 Mobile agent app</li>
+              <li>🌍 Multi-language support</li>
+            </ul>
+          </div>
+          <div class="roadmap-phase">
+            <h4>📅 v1.2 (Q2-Q3)</h4>
+            <ul>
+              <li>🎯 Predictive routing</li>
+              <li>📞 Proactive outreach</li>
+              <li>🧠 AI learns from corrections</li>
+              <li>🔗 CRM/billing integrations</li>
+            </ul>
+          </div>
+          <div class="roadmap-phase">
+            <h4>📅 v2.0 (Year 1)</h4>
+            <ul>
+              <li>📹 Video support</li>
+              <li>🤖 AI quality assurance</li>
+              <li>🏷️ White-label platform</li>
+              <li>📊 Advanced analytics</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 11: Demo -->
+    <div class="slide center-content">
+      <div class="slide-content">
+        <h1>🎬 Live Demo</h1>
+        <p class="subtitle">Let's see Senpilot in action</p>
+        <div class="features-grid" style="max-width: 800px; margin: 0 auto;">
+          <div class="feature-card">
+            <h4>Demo 1</h4>
+            <p>Customer chats with AI about their bill</p>
+          </div>
+          <div class="feature-card">
+            <h4>Demo 2</h4>
+            <p>Agent dashboard with Copilot suggestions</p>
+          </div>
+          <div class="feature-card">
+            <h4>Demo 3</h4>
+            <p>Emergency detection & escalation</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 12: Thank You -->
+    <div class="slide center-content">
+      <div class="slide-content">
+        <div class="logo">◈</div>
+        <h1>Thank You</h1>
+        <p class="subtitle">Questions?</p>
+        <div style="margin-top: 3rem; color: var(--text-secondary);">
+          <p style="font-size: 1rem;">
+            <strong>Tech Stack:</strong> Node.js • React • PostgreSQL • Redis • Retell AI • Gemini • Telnyx
+          </p>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <!-- Navigation -->
+  <div class="navigation">
+    <button class="nav-btn" onclick="prevSlide()">← Prev</button>
+    <span class="slide-counter">1 / 12</span>
+    <button class="nav-btn" onclick="nextSlide()">Next →</button>
+  </div>
+  
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.querySelector('.slide-counter');
+    
+    function showSlide(n) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = (n + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+    }
+    
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+    
+    function prevSlide() {
+      showSlide(currentSlide - 1);
+    }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+    
+    // Touch navigation
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    });
+    document.addEventListener('touchend', (e) => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) nextSlide();
+        else prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>
+

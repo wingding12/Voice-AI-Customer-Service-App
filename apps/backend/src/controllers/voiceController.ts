@@ -13,10 +13,13 @@ import {
   getCallDetails,
   checkRetellStatus,
   createUtilityLLM,
+  createUtilityLLMWithDynamicKB,
   updateAgentPrompt,
   getAgentDetails,
   hasRetellConfig,
   UTILITY_VOICE_AGENT_PROMPT,
+  UTILITY_KNOWLEDGE_BASE,
+  getFullVoiceAgentPrompt,
 } from "../services/voice/retellClient.js";
 import { createSession } from "../services/state/sessionStore.js";
 import { prisma } from "database";
@@ -162,14 +165,44 @@ router.get("/agent", async (_req: Request, res: Response) => {
     }
 
     const agent = await getAgentDetails();
+    const fullPrompt = getFullVoiceAgentPrompt();
+    
     res.json({
       ...agent,
-      promptPreview: UTILITY_VOICE_AGENT_PROMPT.substring(0, 500) + "...",
+      promptLength: fullPrompt.length,
+      hasKnowledgeBase: true,
+      knowledgeBasePreview: UTILITY_KNOWLEDGE_BASE.substring(0, 300) + "...",
+      promptPreview: UTILITY_VOICE_AGENT_PROMPT.substring(0, 300) + "...",
     });
   } catch (error) {
     console.error("❌ Get agent error:", error);
     res.status(500).json({ error: "Failed to get agent details" });
   }
+});
+
+/**
+ * GET /api/voice/knowledge-base
+ *
+ * Get the full knowledge base content used by the voice agent
+ */
+router.get("/knowledge-base", async (_req: Request, res: Response) => {
+  res.json({
+    content: UTILITY_KNOWLEDGE_BASE,
+    length: UTILITY_KNOWLEDGE_BASE.length,
+    categories: [
+      "BILLING & PAYMENTS",
+      "PAYMENT ASSISTANCE", 
+      "SERVICE FEES",
+      "OUTAGES",
+      "GAS EMERGENCY",
+      "NEW SERVICE",
+      "SERVICE CHANGES",
+      "SMART METERS",
+      "HIGH BILLS",
+      "ENERGY EFFICIENCY",
+      "CONTACT INFORMATION"
+    ],
+  });
 });
 
 /**
@@ -215,7 +248,7 @@ router.post("/agent/update-prompt", async (req: Request, res: Response) => {
 /**
  * POST /api/voice/agent/create-llm
  *
- * Create a new LLM with utility-focused prompt
+ * Create a new LLM with utility-focused prompt and static knowledge base
  * Use this if you need to create a new LLM for your agent
  */
 router.post("/agent/create-llm", async (_req: Request, res: Response) => {
@@ -230,7 +263,8 @@ router.post("/agent/create-llm", async (_req: Request, res: Response) => {
     res.json({
       success: true,
       llmId: llm.llm_id,
-      message: "LLM created. Update your Retell agent to use this LLM ID.",
+      hasKnowledgeBase: true,
+      message: "LLM created with utility knowledge base. Update your Retell agent to use this LLM ID.",
       nextSteps: [
         "1. Go to Retell dashboard",
         "2. Select your agent",
@@ -241,6 +275,39 @@ router.post("/agent/create-llm", async (_req: Request, res: Response) => {
   } catch (error) {
     console.error("❌ Create LLM error:", error);
     res.status(500).json({ error: "Failed to create LLM" });
+  }
+});
+
+/**
+ * POST /api/voice/agent/create-llm-dynamic
+ *
+ * Create a new LLM with dynamic knowledge base from database
+ * Use this to include the latest knowledge base articles
+ */
+router.post("/agent/create-llm-dynamic", async (_req: Request, res: Response) => {
+  try {
+    if (!hasRetellConfig()) {
+      res.status(503).json({ error: "Voice service not configured" });
+      return;
+    }
+
+    const llm = await createUtilityLLMWithDynamicKB();
+
+    res.json({
+      success: true,
+      llmId: llm.llm_id,
+      hasKnowledgeBase: true,
+      knowledgeBaseSource: "database",
+      message: "LLM created with dynamic knowledge base from database.",
+      nextSteps: [
+        "1. Go to Retell dashboard",
+        "2. Select your agent", 
+        "3. Update the LLM ID to: " + llm.llm_id,
+      ],
+    });
+  } catch (error) {
+    console.error("❌ Create dynamic LLM error:", error);
+    res.status(500).json({ error: "Failed to create LLM with dynamic KB" });
   }
 });
 
