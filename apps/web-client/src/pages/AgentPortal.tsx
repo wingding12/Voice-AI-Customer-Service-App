@@ -1,30 +1,62 @@
+/**
+ * AgentPortal - Main dashboard for customer service agents
+ * 
+ * Features:
+ * - Live queue of incoming chats/calls
+ * - Real-time conversation view with transcript
+ * - AI copilot suggestions
+ * - Agent controls (switch, mute, hold, end)
+ * - Chat reply input for human-rep mode
+ */
+
 import { useState, useCallback } from 'react';
 import { useCallState } from '../hooks/useCallState';
+import { useAgentQueue } from '../hooks/useAgentQueue';
 import QueuePanel from '../components/agent-dashboard/QueuePanel';
 import ActiveCallBanner from '../components/agent-dashboard/ActiveCallBanner';
 import LiveTranscript from '../components/agent-dashboard/LiveTranscript';
 import SidebarCopilot from '../components/agent-dashboard/SidebarCopilot';
 import ControlPanel from '../components/agent-dashboard/ControlPanel';
+import ChatReplyInput from '../components/agent-dashboard/ChatReplyInput';
 import FooterMetrics from '../components/agent-dashboard/FooterMetrics';
 import ConnectionStatus from '../components/shared/ConnectionStatus';
 import styles from './AgentPortal.module.css';
 
 export default function AgentPortal() {
-  const { isConnected, callState, transcript, suggestions, requestSwitch, joinCall } = useCallState();
+  const { 
+    isConnected, 
+    callState, 
+    transcript, 
+    suggestions, 
+    isSendingMessage,
+    isSwitching,
+    switchError,
+    requestSwitch, 
+    joinCall, 
+    leaveCall,
+    sendChatMessage,
+  } = useCallState();
+  const { queue } = useAgentQueue();
   const [agentId] = useState('AGENT_001'); // TODO: Get from auth
   const [agentStatus, setAgentStatus] = useState<'online' | 'away' | 'busy'>('online');
-  const [selectedQueueItem, setSelectedQueueItem] = useState<string | null>(null);
 
   const handleSelectQueueItem = useCallback((id: string) => {
-    setSelectedQueueItem(id);
-    // In production, this would accept the call/chat and join the session
+    // Leave current session if any
+    if (callState.callId && callState.callId !== id) {
+      leaveCall();
+    }
+    // Join the selected session
     joinCall(id);
-  }, [joinCall]);
+  }, [callState.callId, joinCall, leaveCall]);
 
   const handleStatusChange = (status: 'online' | 'away' | 'busy') => {
     setAgentStatus(status);
     // TODO: Emit status change to backend
   };
+
+  // Determine if this is a chat session (vs voice)
+  const isChat = callState.callId?.startsWith('chat-');
+  const isHumanMode = callState.mode === 'HUMAN_REP';
 
   return (
     <div className={styles.portal}>
@@ -45,6 +77,7 @@ export default function AgentPortal() {
               <span className={styles.activeText}>
                 {callState.mode === 'AI_AGENT' ? '🤖 AI Handling' : '👤 You\'re Live'}
               </span>
+              {isChat && <span className={styles.chatBadge}>💬 Chat</span>}
             </div>
           )}
         </div>
@@ -88,20 +121,36 @@ export default function AgentPortal() {
         {/* Left: Queue Panel */}
         <aside className={styles.queuePanel}>
           <QueuePanel 
+            queue={queue}
             onSelectItem={handleSelectQueueItem}
-            activeItemId={selectedQueueItem}
+            activeItemId={callState.callId}
           />
         </aside>
 
         {/* Center: Active Conversation */}
         <main className={styles.conversationPanel}>
           <ActiveCallBanner callState={callState} />
+          
           <div className={styles.transcriptWrapper}>
             <LiveTranscript entries={transcript} />
           </div>
+          
+          {/* Show chat reply input for chat sessions */}
+          {isChat && (
+            <ChatReplyInput
+              sessionId={callState.callId}
+              isHumanMode={isHumanMode}
+              isSending={isSendingMessage}
+              onSendMessage={sendChatMessage}
+              disabled={callState.status !== 'active'}
+            />
+          )}
+          
           <ControlPanel 
             callState={callState} 
             isConnected={isConnected}
+            isSwitching={isSwitching}
+            switchError={switchError}
             onSwitch={requestSwitch}
           />
         </main>

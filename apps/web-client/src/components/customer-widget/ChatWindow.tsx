@@ -1,22 +1,29 @@
+/**
+ * ChatWindow - Customer Chat Widget
+ * 
+ * Real-time chat interface for customers to communicate with
+ * AI agents and human representatives.
+ * 
+ * Uses Socket.io to receive agent messages in real-time.
+ */
+
 import { useState, useRef, useEffect } from 'react';
+import { useChatSocket } from '../../hooks/useChatSocket';
 import styles from './ChatWindow.module.css';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-  isHuman?: boolean;
-}
-
-type AgentMode = 'AI' | 'HUMAN';
-
 export default function ChatWindow() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    isConnected,
+    sessionId,
+    messages,
+    agentMode,
+    joinSession,
+    addLocalMessage,
+    setAgentMode,
+  } = useChatSocket();
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [agentMode, setAgentMode] = useState<AgentMode>('AI');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
@@ -25,14 +32,8 @@ export default function ChatWindow() {
   }, [messages]);
 
   const sendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    // Add message to local state immediately
+    addLocalMessage(content.trim());
     setInput('');
     setIsLoading(true);
 
@@ -40,8 +41,8 @@ export default function ChatWindow() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: userMessage.content,
+        body: JSON.stringify({
+          message: content.trim(),
           sessionId,
         }),
       });
@@ -49,37 +50,29 @@ export default function ChatWindow() {
       if (!response.ok) throw new Error('Failed to send message');
 
       const data = await response.json();
-      
-      // Update session ID
-      if (data.sessionId) {
-        setSessionId(data.sessionId);
+
+      // Join the session room if this is a new session
+      if (data.sessionId && data.sessionId !== sessionId) {
+        joinSession(data.sessionId);
       }
 
-      // Check if mode changed (AI to Human or vice versa)
-      if (data.reply.includes('connecting you with a human')) {
+      // Check if mode changed (AI to Human)
+      if (data.reply?.includes('connecting you with')) {
         setAgentMode('HUMAN');
       }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.reply || 'Sorry, I could not process that.',
-        timestamp: Date.now(),
-        isHuman: agentMode === 'HUMAN',
-      };
+      // Note: We don't add the assistant message here anymore.
+      // It will come through the Socket.io transcript:update event.
+      // However, if socket isn't connected, fall back to adding it locally.
+      if (!isConnected) {
+        // Fallback for when socket isn't connected
+        addLocalMessage(data.reply || 'Sorry, I could not process that.');
+      }
 
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Sorry, there was an error. Please try again.',
-          timestamp: Date.now(),
-        },
-      ]);
+      // Add error message locally
+      addLocalMessage('Sorry, there was an error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +89,9 @@ export default function ChatWindow() {
   };
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -115,43 +108,46 @@ export default function ChatWindow() {
               {agentMode === 'AI' ? 'AI Assistant' : 'Human Representative'}
             </span>
             <span className={styles.agentStatus}>
-              <span className={styles.statusDot} />
-              Online
+              <span className={`${styles.statusDot} ${isConnected ? styles.connected : ''}`} />
+              {isConnected ? 'Online' : 'Connecting...'}
             </span>
           </div>
         </div>
+        {sessionId && (
+          <span className={styles.sessionId}>#{sessionId.slice(-6)}</span>
+        )}
       </div>
 
       {/* Messages */}
       <div className={styles.messages}>
         {messages.length === 0 && (
           <div className={styles.welcome}>
-            <span className={styles.welcomeIcon}>👋</span>
-            <h3>Welcome!</h3>
+            <span className={styles.welcomeIcon}>⚡</span>
+            <h3>Welcome to Utility Support!</h3>
             <p>I'm your AI assistant. How can I help you today?</p>
             <div className={styles.quickActions}>
-              <button 
+              <button
                 className={styles.quickAction}
-                onClick={() => sendMessage('Where is my order?')}
+                onClick={() => sendMessage('I have a question about my bill')}
               >
-                📦 Track Order
+                💰 Billing
               </button>
-              <button 
+              <button
                 className={styles.quickAction}
-                onClick={() => sendMessage('How do I return an item?')}
+                onClick={() => sendMessage('I want to report a power outage')}
               >
-                ↩️ Returns
+                ⚡ Outage
               </button>
-              <button 
+              <button
                 className={styles.quickAction}
-                onClick={() => sendMessage('I have a question')}
+                onClick={() => sendMessage('I need to set up new service')}
               >
-                ❓ Help
+                🏠 New Service
               </button>
             </div>
           </div>
         )}
-        
+
         {messages.map((message) => (
           <div
             key={message.id}
@@ -168,7 +164,7 @@ export default function ChatWindow() {
             </div>
           </div>
         ))}
-        
+
         {isLoading && (
           <div className={`${styles.message} ${styles.assistant}`}>
             <span className={styles.messageIcon}>
@@ -183,14 +179,14 @@ export default function ChatWindow() {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Talk to Human Button */}
-      {agentMode === 'AI' && (
+      {agentMode === 'AI' && messages.length > 0 && (
         <div className={styles.humanPrompt}>
-          <button 
+          <button
             className={styles.humanButton}
             onClick={handleTalkToHuman}
             disabled={isLoading}
@@ -201,18 +197,30 @@ export default function ChatWindow() {
         </div>
       )}
 
+      {/* Human Mode Indicator */}
+      {agentMode === 'HUMAN' && (
+        <div className={styles.humanModeNotice}>
+          <span className={styles.humanModeIcon}>👤</span>
+          <span>You're now chatting with a human representative</span>
+        </div>
+      )}
+
       {/* Input Form */}
       <form onSubmit={handleSubmit} className={styles.inputForm}>
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={agentMode === 'AI' ? "Type your message..." : "Message the representative..."}
+          placeholder={
+            agentMode === 'AI'
+              ? 'Type your message...'
+              : 'Message the representative...'
+          }
           className={styles.input}
           disabled={isLoading}
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className={styles.sendButton}
           disabled={!input.trim() || isLoading}
         >

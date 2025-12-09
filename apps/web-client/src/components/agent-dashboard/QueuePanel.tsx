@@ -1,36 +1,30 @@
+/**
+ * QueuePanel - Live queue of incoming customer interactions
+ * 
+ * Shows real-time chats and calls waiting for agent attention.
+ * Uses Socket.io to receive live updates.
+ */
+
 import { useState } from 'react';
+import type { QueueItem } from '../../hooks/useAgentQueue';
 import styles from './QueuePanel.module.css';
 
-interface QueueItem {
-  id: string;
-  type: 'voice' | 'chat';
-  customerName: string;
-  customerPhone?: string;
-  waitTime: number; // seconds
-  preview?: string;
-}
-
 interface QueuePanelProps {
+  queue: QueueItem[];
   onSelectItem: (id: string) => void;
   activeItemId: string | null;
 }
 
-// Mock data for demo - in production, this would come from backend via Socket.io
-const mockQueue: QueueItem[] = [
-  { id: 'call-001', type: 'voice', customerName: 'Unknown', customerPhone: '+1 555-0123', waitTime: 45, preview: 'Incoming call' },
-  { id: 'chat-001', type: 'chat', customerName: 'Jane Smith', waitTime: 120, preview: 'Where is my order #12345?' },
-  { id: 'chat-002', type: 'chat', customerName: 'Bob Wilson', waitTime: 85, preview: 'I need to return an item' },
-];
-
-export default function QueuePanel({ onSelectItem, activeItemId }: QueuePanelProps) {
+export default function QueuePanel({ queue, onSelectItem, activeItemId }: QueuePanelProps) {
   const [filter, setFilter] = useState<'all' | 'voice' | 'chat'>('all');
 
-  const filteredQueue = mockQueue.filter(item => 
+  const filteredQueue = queue.filter((item) =>
     filter === 'all' || item.type === filter
   );
 
-  const voiceCount = mockQueue.filter(i => i.type === 'voice').length;
-  const chatCount = mockQueue.filter(i => i.type === 'chat').length;
+  const voiceCount = queue.filter((i) => i.type === 'voice').length;
+  const chatCount = queue.filter((i) => i.type === 'chat').length;
+  const humanNeededCount = queue.filter((i) => i.mode === 'HUMAN_REP').length;
 
   const formatWaitTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -43,7 +37,12 @@ export default function QueuePanel({ onSelectItem, activeItemId }: QueuePanelPro
     <div className={styles.panel}>
       <div className={styles.header}>
         <h2 className={styles.title}>Queue</h2>
-        <span className={styles.count}>{mockQueue.length}</span>
+        <span className={styles.count}>{queue.length}</span>
+        {humanNeededCount > 0 && (
+          <span className={styles.humanNeeded} title="Needs human response">
+            👤 {humanNeededCount}
+          </span>
+        )}
       </div>
 
       <div className={styles.filters}>
@@ -76,16 +75,16 @@ export default function QueuePanel({ onSelectItem, activeItemId }: QueuePanelPro
             <span className={styles.emptyText}>Queue is clear</span>
           </div>
         ) : (
-          filteredQueue.map(item => (
+          filteredQueue.map((item) => (
             <button
               key={item.id}
-              className={`${styles.item} ${activeItemId === item.id ? styles.active : ''}`}
+              className={`${styles.item} ${activeItemId === item.id ? styles.active : ''} ${item.mode === 'HUMAN_REP' ? styles.needsHuman : ''}`}
               onClick={() => onSelectItem(item.id)}
             >
               <div className={styles.itemIcon}>
                 {item.type === 'voice' ? '📞' : '💬'}
               </div>
-              
+
               <div className={styles.itemContent}>
                 <div className={styles.itemHeader}>
                   <span className={styles.itemName}>{item.customerName}</span>
@@ -94,6 +93,9 @@ export default function QueuePanel({ onSelectItem, activeItemId }: QueuePanelPro
                 <span className={styles.itemPreview}>
                   {item.customerPhone || item.preview}
                 </span>
+                {item.mode === 'HUMAN_REP' && (
+                  <span className={styles.modeTag}>Needs Response</span>
+                )}
               </div>
 
               {item.waitTime > 60 && (
@@ -106,15 +108,14 @@ export default function QueuePanel({ onSelectItem, activeItemId }: QueuePanelPro
 
       <div className={styles.stats}>
         <div className={styles.statItem}>
-          <span className={styles.statValue}>12</span>
+          <span className={styles.statValue}>—</span>
           <span className={styles.statLabel}>Resolved Today</span>
         </div>
         <div className={styles.statItem}>
-          <span className={styles.statValue}>2:34</span>
+          <span className={styles.statValue}>—</span>
           <span className={styles.statLabel}>Avg Handle</span>
         </div>
       </div>
     </div>
   );
 }
-

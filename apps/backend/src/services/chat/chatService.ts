@@ -20,6 +20,8 @@ import {
 import {
   emitTranscriptUpdate,
   emitCallStateUpdate,
+  emitQueueAdd,
+  emitQueueUpdate,
 } from "../../sockets/agentGateway.js";
 import { processTranscript } from "../copilot/copilotService.js";
 import { smartSearch } from "../copilot/ragService.js";
@@ -48,12 +50,13 @@ export async function processMessage(
   let session = await getSession(sessionId);
 
   if (!session) {
+    const startTime = Date.now();
     session = {
       callId: sessionId,
       customerId: null,
       mode: "AI_AGENT",
       status: "active",
-      startTime: Date.now(),
+      startTime,
       transcript: [],
       switchCount: 0,
       metadata: {
@@ -76,6 +79,17 @@ export async function processMessage(
     } catch (error) {
       console.error("Failed to create chat record:", error);
     }
+
+    // Notify agents about new chat in queue
+    emitQueueAdd({
+      id: sessionId,
+      type: "chat",
+      customerName: "Customer",
+      waitTime: 0,
+      preview: message.substring(0, 50),
+      mode: "AI_AGENT",
+      createdAt: startTime,
+    });
   }
 
   // Add customer message to transcript
@@ -426,6 +440,13 @@ async function switchToHuman(sessionId: string, reason: string = "CHAT_COMMAND")
     activeSpeaker: "HUMAN",
     isMuted: false,
     mode: "HUMAN_REP",
+  });
+
+  // Update queue to show this needs human attention
+  emitQueueUpdate({
+    id: sessionId,
+    mode: "HUMAN_REP",
+    preview: reason === "GAS_EMERGENCY" ? "⚠️ GAS EMERGENCY" : "Needs human response",
   });
 }
 

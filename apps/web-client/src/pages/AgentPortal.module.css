@@ -84,6 +84,18 @@
   color: var(--accent-primary);
 }
 
+.chatBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  background: rgba(108, 99, 255, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--accent-secondary);
+}
+
 .headerRight {
   display: flex;
   align-items: center;

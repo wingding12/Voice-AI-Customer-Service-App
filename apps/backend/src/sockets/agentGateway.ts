@@ -2,10 +2,11 @@ import type { Server as SocketIOServer, Socket } from 'socket.io';
 import type { CopilotSuggestion, CallStateUpdate, TranscriptEntry } from 'shared-types';
 import { executeSwitch } from '../services/voice/switchService.js';
 import { getDashboardMetrics } from '../services/analytics/analyticsService.js';
+import { sendHumanResponse } from '../services/chat/chatService.js';
 
 let io: SocketIOServer | null = null;
 
-// Room naming convention: agent:<agentId>, call:<callId>, metrics
+// Room naming convention: agent:<agentId>, call:<callId>, metrics, queue
 function agentRoom(agentId: string): string {
   return `agent:${agentId}`;
 }
@@ -15,6 +16,7 @@ function callRoom(callId: string): string {
 }
 
 const METRICS_ROOM = 'metrics';
+const QUEUE_ROOM = 'queue';
 
 export function initializeAgentGateway(socketServer: SocketIOServer): void {
   io = socketServer;
@@ -29,9 +31,26 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
     });
     
     // Agent joins a specific call room to receive updates
-    socket.on('call:join', (callId: string) => {
+    socket.on('call:join', async (callId: string) => {
       socket.join(callRoom(callId));
       console.log(`📞 Socket ${socket.id} joined call ${callId}`);
+      
+      // Send session history to the joining agent
+      try {
+        const { getSession } = await import('../services/state/sessionStore.js');
+        const session = await getSession(callId);
+        
+        if (session) {
+          socket.emit('session:history', {
+            transcript: session.transcript || [],
+            mode: session.mode || 'AI_AGENT',
+            startTime: session.startTime || Date.now(),
+          });
+          console.log(`📜 Sent session history: ${session.transcript?.length || 0} messages`);
+        }
+      } catch (error) {
+        console.error('Failed to send session history:', error);
+      }
     });
     
     // Agent leaves a call room
@@ -58,6 +77,35 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
     socket.on('metrics:unsubscribe', () => {
       socket.leave(METRICS_ROOM);
       console.log(`📊 Socket ${socket.id} unsubscribed from metrics`);
+    });
+
+    // Subscribe to queue updates (for agent dashboard)
+    socket.on('queue:subscribe', () => {
+      socket.join(QUEUE_ROOM);
+      console.log(`📋 Socket ${socket.id} subscribed to queue`);
+    });
+
+    // Unsubscribe from queue
+    socket.on('queue:unsubscribe', () => {
+      socket.leave(QUEUE_ROOM);
+      console.log(`📋 Socket ${socket.id} unsubscribed from queue`);
+    });
+
+    // Agent sends a reply in a chat session
+    socket.on('chat:send_message', async (data: { sessionId: string; message: string }) => {
+      console.log(`💬 Agent sending message to session ${data.sessionId}`);
+      
+      try {
+        await sendHumanResponse(data.sessionId, data.message);
+        // The sendHumanResponse function already emits transcript:update
+        socket.emit('chat:message_sent', { sessionId: data.sessionId, success: true });
+      } catch (error) {
+        console.error('❌ Failed to send agent message:', error);
+        socket.emit('chat:message_error', { 
+          sessionId: data.sessionId, 
+          error: error instanceof Error ? error.message : 'Failed to send message' 
+        });
+      }
     });
 
     // Handle switch request from agent dashboard
@@ -166,5 +214,52 @@ export function emitMetricEvent(
     return;
   }
   io.to(METRICS_ROOM).emit('metrics:event', { type: eventType, data, timestamp: Date.now() });
+}
+
+/**
+ * Queue item interface for real-time queue updates
+ */
+export interface QueueItem {
+  id: string;
+  type: 'voice' | 'chat';
+  customerName: string;
+  customerPhone?: string;
+  waitTime: number;
+  preview?: string;
+  mode: 'AI_AGENT' | 'HUMAN_REP';
+  createdAt: number;
+}
+
+/**
+ * Emit when a new session is added to the queue
+ */
+export function emitQueueAdd(item: QueueItem): void {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+  io.to(QUEUE_ROOM).emit('queue:add', item);
+}
+
+/**
+ * Emit when a session is removed from the queue (accepted or ended)
+ */
+export function emitQueueRemove(sessionId: string): void {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+  io.to(QUEUE_ROOM).emit('queue:remove', { sessionId });
+}
+
+/**
+ * Emit when a queue item is updated (e.g., mode change)
+ */
+export function emitQueueUpdate(item: Partial<QueueItem> & { id: string }): void {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+  io.to(QUEUE_ROOM).emit('queue:update', item);
 }
 

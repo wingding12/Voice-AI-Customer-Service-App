@@ -29,6 +29,9 @@ export function useCallState() {
   const [callState, setCallState] = useState<CallState>(initialCallState);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [suggestions, setSuggestions] = useState<CopilotSuggestion[]>([]);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -77,7 +80,14 @@ export function useCallState() {
     });
 
     socket.on('transcript:update', (data: TranscriptEntry) => {
-      setTranscript((prev) => [...prev, data]);
+      setTranscript((prev) => {
+        // Avoid duplicates based on timestamp and speaker
+        const isDupe = prev.some(
+          (e) => e.timestamp === data.timestamp && e.speaker === data.speaker
+        );
+        if (isDupe) return prev;
+        return [...prev, data];
+      });
     });
 
     socket.on('copilot:suggestion', (data: CopilotSuggestion) => {
@@ -85,6 +95,9 @@ export function useCallState() {
     });
 
     socket.on('call:switch', (data: { direction: string; timestamp: number }) => {
+      console.log('🔄 Switch completed:', data.direction);
+      setIsSwitching(false);
+      setSwitchError(null);
       setCallState((prev) => ({
         ...prev,
         mode: data.direction === 'AI_TO_HUMAN' ? 'HUMAN_REP' : 'AI_AGENT',
@@ -92,8 +105,42 @@ export function useCallState() {
       }));
     });
 
+    // Switch error handling
+    socket.on('switch:error', (data: { callId: string; error: string }) => {
+      console.error('❌ Switch failed:', data.error);
+      setIsSwitching(false);
+      setSwitchError(data.error);
+      // Clear error after 5 seconds
+      setTimeout(() => setSwitchError(null), 5000);
+    });
+
     socket.on('call:end', () => {
       setCallState((prev) => ({ ...prev, status: 'ended' }));
+    });
+
+    // Chat message events
+    socket.on('chat:message_sent', () => {
+      setIsSendingMessage(false);
+    });
+
+    socket.on('chat:message_error', (data: { error: string }) => {
+      console.error('Chat message error:', data.error);
+      setIsSendingMessage(false);
+    });
+
+    // Session history when joining
+    socket.on('session:history', (data: { 
+      transcript: TranscriptEntry[]; 
+      mode: 'AI_AGENT' | 'HUMAN_REP';
+      startTime: number;
+    }) => {
+      console.log('📜 Received session history:', data.transcript.length, 'messages');
+      setTranscript(data.transcript);
+      setCallState((prev) => ({
+        ...prev,
+        mode: data.mode,
+        startTime: data.startTime,
+      }));
     });
 
     // Cleanup
@@ -107,6 +154,9 @@ export function useCallState() {
   const joinCall = useCallback((callId: string) => {
     socketRef.current?.emit('call:join', callId);
     setCallState((prev) => ({ ...prev, callId, status: 'active', startTime: Date.now() }));
+    // Clear old transcript, we'll receive history from server
+    setTranscript([]);
+    setSuggestions([]);
   }, []);
 
   const leaveCall = useCallback(() => {
@@ -122,7 +172,21 @@ export function useCallState() {
   const requestSwitch = useCallback((direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI') => {
     const currentCallId = callState.callId;
     if (currentCallId) {
+      console.log('🔄 Requesting switch:', direction, 'for call', currentCallId);
+      setIsSwitching(true);
+      setSwitchError(null);
       socketRef.current?.emit('call:request_switch', { callId: currentCallId, direction });
+    }
+  }, [callState.callId]);
+
+  const sendChatMessage = useCallback((message: string) => {
+    const currentCallId = callState.callId;
+    if (currentCallId && message.trim()) {
+      setIsSendingMessage(true);
+      socketRef.current?.emit('chat:send_message', {
+        sessionId: currentCallId,
+        message: message.trim(),
+      });
     }
   }, [callState.callId]);
 
@@ -135,9 +199,13 @@ export function useCallState() {
     callState,
     transcript,
     suggestions,
+    isSendingMessage,
+    isSwitching,
+    switchError,
     joinCall,
     leaveCall,
     requestSwitch,
+    sendChatMessage,
     clearSuggestion,
   };
 }
