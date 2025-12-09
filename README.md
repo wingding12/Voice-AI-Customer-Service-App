@@ -121,7 +121,8 @@ Senpilot-Customer-Service-App/
 │   │   │   │   │   └── retellClient.ts   # Retell AI SDK wrapper
 │   │   │   │   └── copilot/
 │   │   │   │       ├── assemblyaiClient.ts  # Intent detection, sentiment
-│   │   │   │       └── ragService.ts        # pgvector knowledge search
+│   │   │   │       ├── ragService.ts        # pgvector knowledge search
+│   │   │   │       └── copilotService.ts    # Main suggestion engine
 │   │   │   ├── sockets/
 │   │   │   │   └── agentGateway.ts   # Socket.io event handlers
 │   │   │   ├── app.ts                # Express app setup
@@ -587,6 +588,57 @@ After seeding the database, run:
 ```typescript
 import { updateAllEmbeddings } from "./services/copilot/ragService";
 await updateAllEmbeddings();
+```
+
+---
+
+## Copilot Suggestion Engine
+
+The main service that ties intent detection and RAG together.
+
+### Copilot Service Functions
+
+| Function              | Purpose                                 |
+| --------------------- | --------------------------------------- |
+| `processTranscript()` | Analyze transcript and emit suggestions |
+| `triggerSuggestion()` | Manually search and emit suggestion     |
+
+### Suggestion Types
+
+| Type     | Icon | Purpose                      |
+| -------- | ---- | ---------------------------- |
+| `INFO`   | 📚   | Knowledge/policy information |
+| `ACTION` | 💡   | Recommended action for agent |
+
+### How Suggestions Are Generated
+
+```
+Transcript Update
+       ↓
+┌──────────────────────────────┐
+│ detectIntent() (AssemblyAI)  │
+│ analyzeSentiment()           │
+│ smartSearch() (pgvector)     │
+└──────────────────────────────┘
+       ↓
+┌──────────────────────────────┐
+│ Intent-specific suggestions: │
+│ • order_status → Order info  │
+│ • refund_request → Policy    │
+│ • complaint → Escalation     │
+└──────────────────────────────┘
+       ↓
+emitCopilotSuggestion() → Socket.io → Frontend
+```
+
+### Frustration Detection
+
+When customer sentiment drops below threshold (-0.3), an automatic alert is sent:
+
+```
+⚠️ Customer Frustration Detected
+The customer seems frustrated. Consider acknowledging
+their concerns and offering a concrete solution.
 ```
 
 ---

@@ -278,11 +278,14 @@ function parseTranscript(
     return [];
   }
 
+  // Calculate base timestamp for fallback (approximate start of conversation)
+  const baseTimestamp = Date.now() - transcriptObject.length * 5000;
+
   return transcriptObject.map((entry, index) => ({
     speaker: entry.role === "agent" ? "AI" as const : "CUSTOMER" as const,
     text: entry.content,
-    // Use word timestamps if available, otherwise estimate
-    timestamp: entry.words?.[0]?.start || Date.now() - (transcriptObject.length - index) * 5000,
+    // Use word timestamps if available, otherwise estimate based on position
+    timestamp: entry.words?.[0]?.start ?? (baseTimestamp + index * 5000),
   }));
 }
 

@@ -6,18 +6,35 @@ let redis: Redis | null = null;
 
 export async function connectRedis(): Promise<Redis> {
   if (redis) return redis;
-  
-  redis = new Redis(env.REDIS_URL);
-  
-  redis.on('connect', () => {
-    console.log('✅ Connected to Redis');
+
+  return new Promise((resolve, reject) => {
+    const client = new Redis(env.REDIS_URL);
+
+    client.on('connect', () => {
+      console.log('✅ Connected to Redis');
+    });
+
+    client.on('ready', () => {
+      redis = client;
+      resolve(client);
+    });
+
+    client.on('error', (err) => {
+      console.error('❌ Redis error:', err);
+      // Only reject if we haven't connected yet
+      if (!redis) {
+        reject(err);
+      }
+    });
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      if (!redis) {
+        client.disconnect();
+        reject(new Error('Redis connection timeout'));
+      }
+    }, 10000);
   });
-  
-  redis.on('error', (err) => {
-    console.error('❌ Redis error:', err);
-  });
-  
-  return redis;
 }
 
 export function getRedis(): Redis {
