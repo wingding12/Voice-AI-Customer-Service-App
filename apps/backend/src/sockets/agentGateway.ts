@@ -35,6 +35,19 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
       socket.leave(callRoom(callId));
       console.log(`📞 Socket ${socket.id} left call ${callId}`);
     });
+
+    // Handle switch request from agent dashboard
+    socket.on('call:request_switch', (data: { callId: string; direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI' }) => {
+      console.log(`🔄 Switch requested: ${data.direction} for call ${data.callId}`);
+      // TODO: Implement actual switch logic with Telnyx/Retell
+      // For now, emit the switch event to update UI (broadcast to all in call room)
+      if (io) {
+        io.to(callRoom(data.callId)).emit('call:switch', { 
+          direction: data.direction, 
+          timestamp: Date.now() 
+        });
+      }
+    });
     
     socket.on('disconnect', () => {
       console.log(`🔌 Agent disconnected: ${socket.id}`);

@@ -48,23 +48,31 @@ export function useSocket(): UseSocketReturn {
     };
   }, []);
 
+  // Use stable references that access the ref at call time
   const emit = useCallback((event: string, data?: unknown) => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit(event, data);
+    const socket = socketRef.current;
+    if (socket?.connected) {
+      socket.emit(event, data);
     } else {
       console.warn('Socket not connected, cannot emit:', event);
     }
   }, []);
 
   const on = useCallback((event: string, handler: (data: unknown) => void) => {
-    socketRef.current?.on(event, handler);
+    const socket = socketRef.current;
+    if (socket) {
+      socket.on(event, handler);
+    }
   }, []);
 
   const off = useCallback((event: string, handler?: (data: unknown) => void) => {
-    if (handler) {
-      socketRef.current?.off(event, handler);
-    } else {
-      socketRef.current?.off(event);
+    const socket = socketRef.current;
+    if (socket) {
+      if (handler) {
+        socket.off(event, handler);
+      } else {
+        socket.off(event);
+      }
     }
   }, []);
 
@@ -76,4 +84,3 @@ export function useSocket(): UseSocketReturn {
     off,
   };
 }
-

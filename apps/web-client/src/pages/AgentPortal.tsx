@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useSocket } from '../hooks/useSocket';
 import { useCallState } from '../hooks/useCallState';
 import ActiveCallBanner from '../components/agent-dashboard/ActiveCallBanner';
 import LiveTranscript from '../components/agent-dashboard/LiveTranscript';
@@ -9,8 +8,7 @@ import ConnectionStatus from '../components/shared/ConnectionStatus';
 import styles from './AgentPortal.module.css';
 
 export default function AgentPortal() {
-  const { isConnected } = useSocket();
-  const { callState, transcript, suggestions, requestSwitch } = useCallState();
+  const { isConnected, callState, transcript, suggestions, requestSwitch } = useCallState();
   const [agentId] = useState('AGENT_001'); // TODO: Get from auth
 
   return (
@@ -51,4 +49,3 @@ export default function AgentPortal() {
     </div>
   );
 }
-

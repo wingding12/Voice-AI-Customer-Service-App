@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSocket } from './useSocket';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import type { CallStateUpdate, CopilotSuggestion, TranscriptEntry } from 'shared-types';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 export interface CallState {
   callId: string | null;
@@ -23,90 +25,106 @@ const initialCallState: CallState = {
 };
 
 export function useCallState() {
-  const { on, off, emit } = useSocket();
+  const [isConnected, setIsConnected] = useState(false);
   const [callState, setCallState] = useState<CallState>(initialCallState);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [suggestions, setSuggestions] = useState<CopilotSuggestion[]>([]);
+  const socketRef = useRef<Socket | null>(null);
 
-  // Handle incoming socket events
   useEffect(() => {
-    const handleStateUpdate = (data: unknown) => {
-      const update = data as CallStateUpdate;
+    // Initialize socket
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current = socket;
+
+    // Connection events
+    socket.on('connect', () => {
+      console.log('🔌 Socket connected:', socket.id);
+      setIsConnected(true);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected:', reason);
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('🔌 Socket connection error:', error.message);
+      setIsConnected(false);
+    });
+
+    // Call state events
+    socket.on('call:state_update', (data: CallStateUpdate) => {
       setCallState((prev) => ({
         ...prev,
-        callId: update.callId,
+        callId: data.callId,
         status: 'active',
-        activeSpeaker: update.activeSpeaker,
-        mode: update.isMuted ? 'HUMAN_REP' : 'AI_AGENT',
+        activeSpeaker: data.activeSpeaker,
+        mode: data.mode,
       }));
-    };
+    });
 
-    const handleTranscriptUpdate = (data: unknown) => {
-      const entry = data as TranscriptEntry;
-      setTranscript((prev) => [...prev, entry]);
-    };
+    socket.on('transcript:update', (data: TranscriptEntry) => {
+      setTranscript((prev) => [...prev, data]);
+    });
 
-    const handleSuggestion = (data: unknown) => {
-      const suggestion = data as CopilotSuggestion;
-      setSuggestions((prev) => [...prev, suggestion]);
-    };
+    socket.on('copilot:suggestion', (data: CopilotSuggestion) => {
+      setSuggestions((prev) => [...prev, data]);
+    });
 
-    const handleSwitch = (data: unknown) => {
-      const { direction } = data as { direction: string };
+    socket.on('call:switch', (data: { direction: string; timestamp: number }) => {
       setCallState((prev) => ({
         ...prev,
-        mode: direction === 'AI_TO_HUMAN' ? 'HUMAN_REP' : 'AI_AGENT',
+        mode: data.direction === 'AI_TO_HUMAN' ? 'HUMAN_REP' : 'AI_AGENT',
         switchCount: prev.switchCount + 1,
       }));
-    };
+    });
 
-    const handleCallEnd = () => {
+    socket.on('call:end', () => {
       setCallState((prev) => ({ ...prev, status: 'ended' }));
-    };
-
-    // Subscribe to events
-    on('call:state_update', handleStateUpdate);
-    on('transcript:update', handleTranscriptUpdate);
-    on('copilot:suggestion', handleSuggestion);
-    on('call:switch', handleSwitch);
-    on('call:end', handleCallEnd);
+    });
 
     // Cleanup
     return () => {
-      off('call:state_update', handleStateUpdate);
-      off('transcript:update', handleTranscriptUpdate);
-      off('copilot:suggestion', handleSuggestion);
-      off('call:switch', handleSwitch);
-      off('call:end', handleCallEnd);
+      socket.disconnect();
+      socketRef.current = null;
     };
-  }, [on, off]);
+  }, []);
 
   // Actions
   const joinCall = useCallback((callId: string) => {
-    emit('call:join', callId);
+    socketRef.current?.emit('call:join', callId);
     setCallState((prev) => ({ ...prev, callId, status: 'active', startTime: Date.now() }));
-  }, [emit]);
+  }, []);
 
   const leaveCall = useCallback(() => {
-    if (callState.callId) {
-      emit('call:leave', callState.callId);
+    const currentCallId = callState.callId;
+    if (currentCallId) {
+      socketRef.current?.emit('call:leave', currentCallId);
     }
     setCallState(initialCallState);
     setTranscript([]);
     setSuggestions([]);
-  }, [emit, callState.callId]);
+  }, [callState.callId]);
 
   const requestSwitch = useCallback((direction: 'AI_TO_HUMAN' | 'HUMAN_TO_AI') => {
-    if (callState.callId) {
-      emit('call:request_switch', { callId: callState.callId, direction });
+    const currentCallId = callState.callId;
+    if (currentCallId) {
+      socketRef.current?.emit('call:request_switch', { callId: currentCallId, direction });
     }
-  }, [emit, callState.callId]);
+  }, [callState.callId]);
 
   const clearSuggestion = useCallback((index: number) => {
     setSuggestions((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   return {
+    isConnected,
     callState,
     transcript,
     suggestions,
@@ -116,4 +134,3 @@ export function useCallState() {
     clearSuggestion,
   };
 }
-

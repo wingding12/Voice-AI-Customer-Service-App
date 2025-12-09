@@ -2,8 +2,8 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { app } from './app.js';
 import { env } from './config/env.js';
-// import { initializeAgentGateway } from './sockets/agentGateway.js';
-// import { connectRedis } from './services/state/sessionStore.js';
+import { initializeAgentGateway } from './sockets/agentGateway.js';
+import { connectRedis } from './services/state/sessionStore.js';
 
 const httpServer = createServer(app);
 
@@ -15,22 +15,13 @@ const io = new SocketIOServer(httpServer, {
   },
 });
 
-// Initialize Socket.io gateway (to be implemented)
-// initializeAgentGateway(io);
-
-// Basic connection handling
-io.on('connection', (socket) => {
-  console.log(`🔌 Client connected: ${socket.id}`);
-  
-  socket.on('disconnect', () => {
-    console.log(`🔌 Client disconnected: ${socket.id}`);
-  });
-});
+// Initialize Socket.io gateway for agent dashboard
+initializeAgentGateway(io);
 
 async function startServer() {
   try {
-    // Connect to Redis (to be implemented)
-    // await connectRedis();
+    // Connect to Redis
+    await connectRedis();
     
     httpServer.listen(env.PORT, () => {
       console.log(`
@@ -54,4 +45,3 @@ async function startServer() {
 startServer();
 
 export { io };
-
