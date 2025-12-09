@@ -21,6 +21,7 @@ import {
   emitCallEnd,
 } from "../sockets/agentGateway.js";
 import { verifyWebhookSignature, hasRetellConfig } from "../services/voice/retellClient.js";
+import { processTranscript } from "../services/copilot/copilotService.js";
 import { env } from "../config/env.js";
 
 const router = Router();
@@ -264,6 +265,17 @@ async function handleTranscriptUpdate(
     text: content,
     timestamp,
   });
+
+  // Trigger copilot analysis when customer speaks (async, don't block response)
+  if (role === "user") {
+    const session = await getSession(call_id);
+    if (session && session.transcript.length >= 2) {
+      // Run copilot in background (don't await)
+      processTranscript(call_id, session.transcript).catch((err) => {
+        console.error("❌ Copilot processing error:", err);
+      });
+    }
+  }
 
   res.status(200).json({ received: true });
 }

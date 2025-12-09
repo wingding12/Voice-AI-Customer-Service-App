@@ -24,7 +24,7 @@ A sophisticated **Human-in-the-Loop (HITL)** customer service platform featuring
 | Feature                   | Description                                              | Status        |
 | ------------------------- | -------------------------------------------------------- | ------------- |
 | 🤖 **AI Voice Agent**     | Powered by Retell AI for low-latency voice conversations | ✅ Integrated |
-| 👤 **Copilot Assistant**  | Real-time suggestions sidebar for human representatives  | 🔜 Phase 5    |
+| 👤 **Copilot Assistant**  | Real-time suggestions sidebar for human representatives  | ✅ Integrated |
 | 🔄 **Seamless Switching** | Toggle between AI and human without dropping calls       | 🔜 Phase 7    |
 | 💬 **Multi-Channel**      | Support for both voice calls and text chat               | 🔜 Phase 8    |
 | 📊 **Diagnostics**        | Track switch events and conversation analytics           | 🔜 Phase 9    |
@@ -652,9 +652,9 @@ their concerns and offering a concrete solution.
 | 2     | Backend Skeleton   | ✅ Complete | Express, Socket.io, Redis, health check |
 | 3     | Telephony - Telnyx | ✅ Complete | Incoming calls, webhooks, TeXML         |
 | 4     | Voice AI - Retell  | ✅ Complete | Retell SDK, webhooks, live transcripts  |
-| 5     | Copilot Brain      | 🔜 Next     | AssemblyAI, pgvector RAG, suggestions   |
+| 5     | Copilot Brain      | ✅ Complete | AssemblyAI, pgvector RAG, suggestions   |
 | 6     | Frontend Polish    | ⏳ Pending  | UI refinements, animations              |
-| 7     | The Switch         | ⏳ Pending  | Real-time AI↔Human handoff              |
+| 7     | The Switch         | 🔜 Next     | Real-time AI↔Human handoff              |
 | 8     | Text Chat          | ⏳ Pending  | Chat endpoint, unified messages         |
 | 9     | Diagnostics        | ⏳ Pending  | Analytics, switch tracking              |
 
