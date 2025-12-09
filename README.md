@@ -116,9 +116,11 @@ Senpilot-Customer-Service-App/
 │   │   │   ├── services/
 │   │   │   │   ├── state/
 │   │   │   │   │   └── sessionStore.ts   # Redis session management
-│   │   │   │   └── voice/
-│   │   │   │       ├── telnyxClient.ts   # TeXML builder + Telnyx API
-│   │   │   │       └── retellClient.ts   # Retell AI SDK wrapper
+│   │   │   │   ├── voice/
+│   │   │   │   │   ├── telnyxClient.ts   # TeXML builder + Telnyx API
+│   │   │   │   │   └── retellClient.ts   # Retell AI SDK wrapper
+│   │   │   │   └── copilot/
+│   │   │   │       └── assemblyaiClient.ts  # Intent detection, sentiment
 │   │   │   ├── sockets/
 │   │   │   │   └── agentGateway.ts   # Socket.io event handlers
 │   │   │   ├── app.ts                # Express app setup
@@ -498,6 +500,40 @@ Customer calls → Telnyx receives → Backend answers
                                        ↓
                          Press 0 → Switch to Human Rep
 ```
+
+---
+
+## AssemblyAI Copilot Integration
+
+AssemblyAI's LeMUR powers the Copilot's intelligence for real-time agent assistance.
+
+### Copilot Functions
+
+| Function                  | Purpose                                  |
+| ------------------------- | ---------------------------------------- |
+| `detectIntent()`          | Identify customer intent from transcript |
+| `analyzeSentiment()`      | Detect frustration or positive sentiment |
+| `summarizeConversation()` | Generate 2-3 sentence summary            |
+| `extractActionItems()`    | Pull follow-up tasks from conversation   |
+
+### Detected Intents
+
+| Intent             | Description                    |
+| ------------------ | ------------------------------ |
+| `order_status`     | Customer checking order status |
+| `refund_request`   | Customer requesting refund     |
+| `product_question` | Questions about products       |
+| `complaint`        | Customer complaint             |
+| `general_inquiry`  | General questions              |
+
+### Setting Up AssemblyAI
+
+1. Create an [AssemblyAI account](https://assemblyai.com)
+2. Get your API key from the dashboard
+3. Add to `.env`:
+   ```env
+   ASSEMBLYAI_API_KEY=your_api_key
+   ```
 
 ---
 
