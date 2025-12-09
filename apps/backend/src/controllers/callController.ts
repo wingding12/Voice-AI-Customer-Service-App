@@ -294,16 +294,26 @@ async function handleSwitch(
 
 /**
  * Gather endpoint for DTMF collection
+ * Telnyx TeXML sends: CallSessionId, CallLegId, CallControlId, Digits, etc.
  */
 router.post("/gather", async (req: Request, res: Response) => {
-  // This receives the gathered digits from the Gather verb
-  const { Digits, CallSid } = req.body;
+  // Telnyx TeXML uses CallSessionId, but we also check CallSid for compatibility
+  const { Digits, CallSessionId, CallSid } = req.body;
+  const callId = CallSessionId || CallSid;
 
-  console.log(`🔢 Gathered digits: ${Digits} for call ${CallSid}`);
+  console.log(`🔢 Gathered digits: ${Digits} for call ${callId}`);
+  console.log(`📋 Gather callback body:`, JSON.stringify(req.body, null, 2));
+
+  if (!callId) {
+    console.error("❌ No call ID in gather callback");
+    res.set("Content-Type", "application/xml");
+    res.send(TeXML.say("Sorry, there was an error. Please try again."));
+    return;
+  }
 
   // Process the same as dtmf.received
   if (Digits === "0") {
-    await handleSwitch(CallSid, "AI_TO_HUMAN", "DTMF_GATHER");
+    await handleSwitch(callId, "AI_TO_HUMAN", "DTMF_GATHER");
     res.set("Content-Type", "application/xml");
     res.send(TeXML.say("Connecting you with a human representative."));
   } else {
