@@ -263,3 +263,14 @@ export function emitQueueUpdate(item: Partial<QueueItem> & { id: string }): void
   io.to(QUEUE_ROOM).emit('queue:update', item);
 }
 
+/**
+ * Emit live message preview update to queue subscribers
+ */
+export function emitQueueMessagePreview(sessionId: string, preview: string): void {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+  io.to(QUEUE_ROOM).emit('queue:message_preview', { sessionId, preview });
+}
+

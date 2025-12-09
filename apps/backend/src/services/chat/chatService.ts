@@ -22,6 +22,7 @@ import {
   emitCallStateUpdate,
   emitQueueAdd,
   emitQueueUpdate,
+  emitQueueMessagePreview,
 } from "../../sockets/agentGateway.js";
 import { processTranscript } from "../copilot/copilotService.js";
 import { smartSearch } from "../copilot/ragService.js";
@@ -101,6 +102,9 @@ export async function processMessage(
     text: message,
     timestamp,
   });
+
+  // Update queue preview with latest customer message
+  emitQueueMessagePreview(sessionId, `Customer: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`);
 
   // Generate response based on mode
   let reply: string;

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  max-height: 500px;
   min-height: 400px;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
@@ -10,8 +11,10 @@
 
 /* Agent Header */
 .agentHeader {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: var(--spacing-md);
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, var(--bg-tertiary) 100%);
   border-bottom: 1px solid var(--border-color);
@@ -56,15 +59,28 @@
   align-items: center;
   gap: var(--spacing-xs);
   font-size: 0.75rem;
-  color: var(--accent-primary);
+  color: var(--text-muted);
 }
 
 .statusDot {
   width: 6px;
   height: 6px;
-  background: var(--accent-primary);
+  background: var(--text-muted);
   border-radius: 50%;
+}
+
+.statusDot.connected {
+  background: var(--accent-primary);
   animation: pulse 2s ease-in-out infinite;
+}
+
+.sessionId {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
 }
 
 @keyframes pulse {
@@ -75,11 +91,31 @@
 /* Messages */
 .messages {
   flex: 1;
+  min-height: 0; /* Important for scrolling */
   overflow-y: auto;
   padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+/* Custom scrollbar */
+.messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 /* Welcome state */
@@ -186,6 +222,8 @@
   border-radius: var(--radius-lg);
   font-size: 0.9375rem;
   line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .user .messageContent {
@@ -234,14 +272,16 @@
   30% { transform: translateY(-8px); }
 }
 
-/* Talk to Human prompt */
-.humanPrompt {
+/* Mode switch prompt */
+.modePrompt {
+  flex-shrink: 0;
   padding: var(--spacing-sm) var(--spacing-md);
   border-top: 1px solid var(--border-color);
   background: var(--bg-tertiary);
 }
 
-.humanButton {
+.humanButton,
+.aiButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,12 +289,16 @@
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   background: transparent;
-  border: 1px dashed var(--accent-primary);
+  border: 1px dashed;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--accent-primary);
   transition: all 0.15s ease;
+}
+
+.humanButton {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .humanButton:hover:not(:disabled) {
@@ -262,16 +306,46 @@
   border-style: solid;
 }
 
-.humanButton:disabled {
-  opacity: 0.5;
+.aiButton {
+  border-color: var(--status-ai);
+  color: var(--status-ai);
 }
 
-.humanIcon {
+.aiButton:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.1);
+  border-style: solid;
+}
+
+.humanButton:disabled,
+.aiButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modeIcon {
   font-size: 1rem;
+}
+
+/* Human mode notice */
+.humanModeNotice {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: rgba(0, 212, 170, 0.1);
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+}
+
+.humanModeIcon {
+  font-size: 0.875rem;
 }
 
 /* Input form */
 .inputForm {
+  flex-shrink: 0;
   display: flex;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);

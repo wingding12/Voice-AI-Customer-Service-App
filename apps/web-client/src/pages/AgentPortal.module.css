@@ -191,6 +191,7 @@
 
 .transcriptWrapper {
   flex: 1;
+  min-height: 0; /* Important for flex children with overflow */
   overflow: hidden;
 }
 

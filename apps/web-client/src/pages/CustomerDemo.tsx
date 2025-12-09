@@ -13,7 +13,7 @@ export default function CustomerDemo() {
       <div className={styles.container}>
         {/* Header */}
         <header className={styles.header}>
-          <h1 className={styles.title}>Customer Support</h1>
+          <h1 className={styles.title}>⚡ Utility Support</h1>
           <p className={styles.subtitle}>How would you like to connect?</p>
         </header>
 
@@ -35,13 +35,14 @@ export default function CustomerDemo() {
           </button>
         </div>
 
-        {/* Content based on mode */}
+        {/* Content - keep both mounted, toggle visibility */}
         <div className={styles.content}>
-          {mode === 'chat' ? (
+          <div className={`${styles.chatPane} ${mode === 'chat' ? styles.visible : styles.hidden}`}>
             <ChatWindow />
-          ) : (
+          </div>
+          <div className={`${styles.voicePane} ${mode === 'voice' ? styles.visible : styles.hidden}`}>
             <CallButton />
-          )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -52,4 +53,3 @@ export default function CustomerDemo() {
     </div>
   );
 }
-

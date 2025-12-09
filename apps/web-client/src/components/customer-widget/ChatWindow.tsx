@@ -88,6 +88,35 @@ export default function ChatWindow() {
     sendMessage('/human');
   };
 
+  const handleSwitchToAI = async () => {
+    if (!sessionId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/chat/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          direction: 'HUMAN_TO_AI',
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to switch');
+
+      const data = await response.json();
+      if (data.success) {
+        setAgentMode('AI');
+        // Add a system message
+        addLocalMessage('You are now chatting with the AI assistant.');
+      }
+    } catch (error) {
+      console.error('Switch error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString([], {
       hour: '2-digit',
@@ -183,17 +212,28 @@ export default function ChatWindow() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Talk to Human Button */}
-      {agentMode === 'AI' && messages.length > 0 && (
-        <div className={styles.humanPrompt}>
-          <button
-            className={styles.humanButton}
-            onClick={handleTalkToHuman}
-            disabled={isLoading}
-          >
-            <span className={styles.humanIcon}>👤</span>
-            Talk to a Human
-          </button>
+      {/* Mode Switch Buttons */}
+      {messages.length > 0 && (
+        <div className={styles.modePrompt}>
+          {agentMode === 'AI' ? (
+            <button
+              className={styles.humanButton}
+              onClick={handleTalkToHuman}
+              disabled={isLoading}
+            >
+              <span className={styles.modeIcon}>👤</span>
+              Talk to a Human
+            </button>
+          ) : (
+            <button
+              className={styles.aiButton}
+              onClick={handleSwitchToAI}
+              disabled={isLoading}
+            >
+              <span className={styles.modeIcon}>🤖</span>
+              Switch to AI Assistant
+            </button>
+          )}
         </div>
       )}
 
@@ -201,7 +241,7 @@ export default function ChatWindow() {
       {agentMode === 'HUMAN' && (
         <div className={styles.humanModeNotice}>
           <span className={styles.humanModeIcon}>👤</span>
-          <span>You're now chatting with a human representative</span>
+          <span>You're chatting with a human representative</span>
         </div>
       )}
 

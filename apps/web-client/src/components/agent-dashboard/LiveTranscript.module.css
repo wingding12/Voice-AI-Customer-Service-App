@@ -1,8 +1,28 @@
 .container {
   flex: 1;
+  min-height: 0; /* Important for flex children with overflow */
   overflow-y: auto;
   padding: var(--spacing-lg);
   background: var(--bg-primary);
+}
+
+/* Custom scrollbar */
+.container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.container::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .empty {
