@@ -8,8 +8,10 @@
 
 .container {
   width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
+  max-width: 600px;
+  height: 80vh;
+  max-height: 700px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
