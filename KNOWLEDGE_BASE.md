@@ -1,4 +1,4 @@
-# Senpilot Knowledge Base
+# Utility Customer Service Knowledge Base
 
 ## Utility Customer Service Documentation
 
@@ -466,4 +466,4 @@ We never disconnect without notice. You'll receive:
 ---
 
 _Last Updated: December 2024_
-_Senpilot Customer Service Platform_
+_AI-Powered Customer Service Platform_

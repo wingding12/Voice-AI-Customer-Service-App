@@ -1,4 +1,4 @@
-# Senpilot Customer Service Platform
+# AI Customer Service Platform
 
 A sophisticated **Human-in-the-Loop (HITL)** customer service platform featuring an AI Voice Agent and Copilot Assistant. The system uses a **Conference Bridge** architecture that allows seamless real-time switching between AI and human agents without dropping calls.
 
@@ -104,7 +104,7 @@ Instead of forwarding calls (which causes drops), we use a conference room where
 ## Project Structure
 
 ```
-Senpilot-Customer-Service-App/
+customer-service-platform/
 ├── apps/
 │   ├── backend/                      # Node.js API Server
 │   │   ├── src/
@@ -201,7 +201,7 @@ Senpilot-Customer-Service-App/
 
 ```bash
 git clone <repo-url>
-cd Senpilot-Customer-Service-App
+cd customer-service-platform
 npm install
 ```
 
@@ -443,7 +443,7 @@ The backend responds to Telnyx webhooks with TeXML (XML-based call control):
 <!-- Answer with greeting and DTMF gather -->
 <Response>
   <Gather action="/webhooks/telnyx/gather" numDigits="1" timeout="5">
-    <Say voice="alice">Welcome to Senpilot. Press 0 for human.</Say>
+    <Say voice="alice">Welcome to Utility Support. Press 0 for human.</Say>
   </Gather>
 </Response>
 

@@ -157,19 +157,19 @@ async function handleCallInitiated(
 
       // Retell will handle the conversation via its own greeting
       // We just answer the call and let Retell take over
-      const greeting = `Welcome to Senpilot. Our AI assistant will help you now. Press 0 at any time for a human.`;
+      const greeting = `Welcome to Utility Customer Service. Our AI assistant will help you now. Press 0 at any time for a human.`;
       res.set("Content-Type", "application/xml");
       res.send(TeXML.answerAndGreet(greeting, true));
     } catch (error) {
       console.error("❌ Failed to register call with Retell:", error);
       // Fall back to basic greeting without Retell
-      const fallbackGreeting = `Welcome to Senpilot Customer Service. Press 0 to speak with a representative.`;
+      const fallbackGreeting = `Welcome to Utility Customer Service. Press 0 to speak with a representative.`;
       res.set("Content-Type", "application/xml");
       res.send(TeXML.answerAndGreet(fallbackGreeting, true));
     }
   } else {
     // No Retell configured - use basic TeXML greeting
-    const greeting = `Welcome to Senpilot Customer Service. 
+    const greeting = `Welcome to Utility Customer Service. 
       You are currently speaking with our AI assistant. 
       Press 0 at any time to speak with a human representative.
       How can I help you today?`;

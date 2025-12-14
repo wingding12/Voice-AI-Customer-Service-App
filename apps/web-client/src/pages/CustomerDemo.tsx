@@ -47,7 +47,7 @@ export default function CustomerDemo() {
 
         {/* Footer */}
         <footer className={styles.footer}>
-          <p>Powered by <span className={styles.brand}>Senpilot</span></p>
+          <p>Powered by <span className={styles.brand}>AI</span></p>
         </footer>
       </div>
     </div>

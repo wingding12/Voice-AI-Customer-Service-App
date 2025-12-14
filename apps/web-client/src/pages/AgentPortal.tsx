@@ -65,7 +65,7 @@ export default function AgentPortal() {
         <div className={styles.headerLeft}>
           <h1 className={styles.logo}>
             <span className={styles.logoIcon}>◈</span>
-            Senpilot
+            Agent Portal
           </h1>
           <span className={styles.badge}>Agent Dashboard</span>
         </div>
