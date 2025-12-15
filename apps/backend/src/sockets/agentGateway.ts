@@ -3,7 +3,8 @@ import type { CopilotSuggestion, CallStateUpdate, TranscriptEntry } from 'shared
 import { executeSwitch } from '../services/voice/switchService.js';
 import { getDashboardMetrics } from '../services/analytics/analyticsService.js';
 import { sendHumanResponse } from '../services/chat/chatService.js';
-import { appendTranscript, getSession } from '../services/state/sessionStore.js';
+import { appendTranscript, getSession, updateSession } from '../services/state/sessionStore.js';
+import { generateCopilotAnalysis } from '../services/ai/llmService.js';
 
 let io: SocketIOServer | null = null;
 
@@ -186,11 +187,34 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
       // Update queue preview
       const previewText = speaker === 'AI' ? `AI: ${content}` : `Caller: ${content}`;
       emitQueueMessagePreview(sessionId, previewText.substring(0, 60) + (previewText.length > 60 ? '...' : ''));
+      
+      // Generate copilot analysis for voice calls (when customer speaks)
+      if (speaker === 'CUSTOMER') {
+        try {
+          const session = await getSession(sessionId);
+          if (session && session.transcript && session.transcript.length >= 2) {
+            const copilotAnalysis = await generateCopilotAnalysis(sessionId, session.transcript);
+            for (const suggestion of copilotAnalysis.suggestions) {
+              emitCopilotSuggestion(sessionId, suggestion);
+            }
+          }
+        } catch (error) {
+          console.error('Voice copilot analysis error:', error);
+        }
+      }
     });
 
     // Customer ends voice call
-    socket.on('voice:end', (data: { sessionId: string }) => {
+    socket.on('voice:end', async (data: { sessionId: string }) => {
       console.log(`🎤 Voice call ended: ${data.sessionId}`);
+      
+      // Update session status
+      try {
+        await updateSession(data.sessionId, { status: 'ended' });
+      } catch (error) {
+        console.error('Failed to update voice session status:', error);
+      }
+      
       emitCallEnd(data.sessionId);
       emitQueueRemove(data.sessionId);
     });

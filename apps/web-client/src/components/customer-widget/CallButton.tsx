@@ -11,8 +11,6 @@ export default function CallButton() {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [agentMode, setAgentMode] = useState<"AI" | "HUMAN">("AI");
   const [transcript, setTranscript] = useState<
     Array<{ role: string; content: string }>
   >([]);
@@ -182,6 +180,47 @@ export default function CallButton() {
     setTimeout(() => setStatus("idle"), 2000);
   }, []);
 
+  // Request transfer to human representative
+  // Note: Due to WebRTC limitations, true call transfer isn't possible.
+  // Instead, we notify the human rep dashboard and update the call mode.
+  // The rep can then see the transcript and may call the customer back.
+  const requestHuman = useCallback(async () => {
+    if (!sessionIdRef.current) return;
+    
+    try {
+      // Call the switch API to transition to human mode
+      const response = await fetch(`${API_URL}/api/chat/switch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          direction: "AI_TO_HUMAN",
+        }),
+      });
+
+      if (response.ok) {
+        // Add a local transcript entry to show the request was made
+        setTranscript((prev) => [
+          ...prev,
+          { role: "user", content: "[Requested human representative]" },
+          { role: "agent", content: "I've notified our team that you'd like to speak with a representative. They can see our conversation and will assist you shortly. You can continue speaking, and they'll respond when available. If this is urgent, please stay on the line or call us back at 1-800-POWER-GS." },
+        ]);
+        
+        // Forward the notification to the backend via socket
+        if (socketRef.current?.connected) {
+          socketRef.current.emit("voice:transcript", {
+            sessionId: sessionIdRef.current,
+            role: "user",
+            content: "[Customer requested human representative]",
+            timestamp: Date.now(),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to request human:", error);
+    }
+  }, []);
+
   const toggleMute = useCallback(() => {
     if (retellClientRef.current && status === "active") {
       if (isMuted) {
@@ -200,43 +239,6 @@ export default function CallButton() {
       endCall();
     }
   };
-
-  // Transfer to human representative
-  const transferToHuman = useCallback(async () => {
-    if (!sessionIdRef.current || isTransferring) return;
-    
-    setIsTransferring(true);
-    try {
-      const response = await fetch(`${API_URL}/api/switch/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          callId: sessionIdRef.current,
-          direction: "AI_TO_HUMAN",
-          reason: "CUSTOMER_BUTTON",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to transfer");
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setAgentMode("HUMAN");
-        // Add a system message to transcript
-        setTranscript((prev) => [
-          ...prev,
-          { role: "system", content: "Connecting you with a human representative..." },
-        ]);
-      }
-    } catch (err) {
-      console.error("Transfer error:", err);
-      setError("Unable to transfer. Please try again.");
-    } finally {
-      setIsTransferring(false);
-    }
-  }, [isTransferring]);
 
   const isInCall = status === "active" || status === "connecting";
 
@@ -286,15 +288,12 @@ export default function CallButton() {
             >
               {isMuted ? "🔇 Unmute" : "🎙️ Mute"}
             </button>
-            {agentMode === "AI" && (
-              <button
-                className={`${styles.controlButton} ${styles.humanButton}`}
-                onClick={transferToHuman}
-                disabled={isTransferring}
-              >
-                {isTransferring ? "⏳ Connecting..." : "👤 Talk to Human"}
-              </button>
-            )}
+            <button
+              className={`${styles.controlButton} ${styles.humanButton}`}
+              onClick={requestHuman}
+            >
+              👤 Talk to Human
+            </button>
             <button
               className={`${styles.controlButton} ${styles.endButton}`}
               onClick={endCall}
@@ -304,9 +303,9 @@ export default function CallButton() {
           </div>
         )}
 
-        {status === "active" && agentMode === "HUMAN" && (
-          <div className={styles.humanModeIndicator}>
-            👤 Connected with Human Representative
+        {!isInCall && (
+          <div className={styles.hint}>
+            You can request a human representative during the call
           </div>
         )}
       </div>

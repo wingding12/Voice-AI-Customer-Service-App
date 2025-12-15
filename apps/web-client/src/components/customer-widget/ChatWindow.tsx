@@ -93,11 +93,16 @@ export default function ChatWindow() {
   };
 
   const handleTalkToHuman = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      // If no session exists yet, send a message first to create the session
+      await sendMessage('I would like to speak with a human representative.');
+      return;
+    }
     
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/chat/switch`, {
+      // Directly call the switch API instead of sending /human as a message
+      const response = await fetch('/api/chat/switch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,16 +111,17 @@ export default function ChatWindow() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to switch');
+      if (!response.ok) throw new Error('Failed to switch to human');
 
       const data = await response.json();
       if (data.success) {
         setAgentMode('HUMAN');
-        addLocalMessage('Connecting you with a human representative. Please wait...');
+        // Add a system message to show the switch happened
+        addAssistantMessage("I'm connecting you with a human representative. They will be with you shortly.", false);
       }
     } catch (error) {
       console.error('Switch to human error:', error);
-      addLocalMessage('Unable to connect to a representative right now. Please try again.');
+      addAssistantMessage("Sorry, I couldn't connect you with a representative right now. Please try again.", false);
     } finally {
       setIsLoading(false);
     }

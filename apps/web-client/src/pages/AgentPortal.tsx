@@ -56,6 +56,7 @@ export default function AgentPortal() {
 
   // Determine if this is a chat session (vs voice)
   const isChat = callState.callId?.startsWith('chat-');
+  const isVoice = callState.callId?.startsWith('voice-');
   const isHumanMode = callState.mode === 'HUMAN_REP';
 
   return (
@@ -78,6 +79,7 @@ export default function AgentPortal() {
                 {callState.mode === 'AI_AGENT' ? '🤖 AI Handling' : '👤 You\'re Live'}
               </span>
               {isChat && <span className={styles.chatBadge}>💬 Chat</span>}
+              {isVoice && <span className={styles.voiceBadge}>📞 Voice</span>}
             </div>
           )}
         </div>
@@ -135,7 +137,7 @@ export default function AgentPortal() {
           <ActiveCallBanner callState={callState} />
           
           {/* Voice call indicator */}
-          {callState.callId && !isChat && (
+          {isVoice && callState.status === 'active' && (
             <div className={styles.voiceCallHeader}>
               <span className={styles.voiceIcon}>📞</span>
               <span className={styles.voiceLabel}>Live Voice Call</span>
@@ -143,6 +145,9 @@ export default function AgentPortal() {
                 <span className={styles.liveDot}></span>
                 LIVE
               </span>
+              {isHumanMode && (
+                <span className={styles.humanTakeoverBadge}>👤 Human Takeover Active</span>
+              )}
             </div>
           )}
           
