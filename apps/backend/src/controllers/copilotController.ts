@@ -157,7 +157,12 @@ router.post("/suggestions", async (req: Request, res: Response) => {
       return;
     }
 
-    const suggestions = await generateRealtimeSuggestions(sessionId, session.transcript || []);
+    // Import and use generateCopilotAnalysis directly with force=true
+    const { generateCopilotAnalysis } = await import("../services/ai/llmService.js");
+    const analysis = await generateCopilotAnalysis(sessionId, session.transcript || [], true);
+    const suggestions = analysis.suggestions;
+
+    console.log(`🎯 Copilot suggestions generated for ${sessionId}: ${suggestions.length} suggestions`);
 
     if (emit) {
       // Import and emit via socket

@@ -103,14 +103,22 @@ export async function executeSwitch(request: SwitchRequest): Promise<SwitchResul
       switchCount: session.switchCount + 1,
     });
 
-    // Log to database
-    await logSwitchEvent(callId, direction, reason);
+    // Log to database (non-critical - don't fail if DB unavailable)
+    try {
+      await logSwitchEvent(callId, direction, reason);
+    } catch (error) {
+      console.warn("Failed to log switch event (DB may be unavailable):", error);
+    }
 
-    // Update call mode in database
-    await prisma.call.update({
-      where: { id: callId },
-      data: { mode: newMode },
-    });
+    // Update call mode in database (non-critical)
+    try {
+      await prisma.call.update({
+        where: { id: callId },
+        data: { mode: newMode },
+      });
+    } catch (error) {
+      console.warn("Failed to update call mode in DB (DB may be unavailable):", error);
+    }
 
     // Notify frontend
     const activeSpeaker: SpeakerType = direction === "AI_TO_HUMAN" ? "HUMAN" : "AI";

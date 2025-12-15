@@ -145,6 +145,7 @@ router.post("/end", async (req: Request, res: Response) => {
 router.post("/switch", async (req: Request, res: Response) => {
   try {
     const { sessionId, direction } = req.body;
+    console.log(`🔄 Chat switch requested: ${direction} for session ${sessionId}`);
 
     if (!sessionId) {
       res.status(400).json({ error: "sessionId is required" });
@@ -168,6 +169,8 @@ router.post("/switch", async (req: Request, res: Response) => {
       direction,
       reason: "CHAT_SWITCH",
     });
+
+    console.log(`🔄 Chat switch result:`, result);
 
     if (result.success) {
       res.json({

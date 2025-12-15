@@ -161,10 +161,11 @@ export async function triggerSuggestion(
  */
 export async function generateRealtimeSuggestions(
   callId: string,
-  transcript: TranscriptEntry[]
+  transcript: TranscriptEntry[],
+  force: boolean = false
 ): Promise<CopilotSuggestion[]> {
   try {
-    const analysis = await generateCopilotAnalysis(callId, transcript);
+    const analysis = await generateCopilotAnalysis(callId, transcript, force);
     return analysis.suggestions;
   } catch (error) {
     console.error("❌ Realtime suggestion error:", error);
@@ -183,7 +184,7 @@ export async function getConversationSummary(
   transcript: TranscriptEntry[]
 ): Promise<{ summary: string; priority: string; intents: string[] }> {
   try {
-    const analysis = await generateCopilotAnalysis(callId, transcript);
+    const analysis = await generateCopilotAnalysis(callId, transcript, true);
     
     return {
       summary: analysis.contextSummary,

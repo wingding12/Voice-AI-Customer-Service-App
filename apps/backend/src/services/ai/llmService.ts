@@ -41,7 +41,7 @@ function getAgentModel(): GenerativeModel {
   if (!agentModel) {
     const client = getGeminiClient();
     agentModel = client.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: UNIFIED_AGENT_PROMPT,
       generationConfig: {
         temperature: 0.7,
@@ -57,7 +57,7 @@ function getCopilotModel(): GenerativeModel {
   if (!copilotModel) {
     const client = getGeminiClient();
     copilotModel = client.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: COPILOT_SYSTEM_PROMPT,
       generationConfig: {
         temperature: 0.5,
@@ -318,7 +318,7 @@ async function generateGeminiAgentResponse(
   
   // Use generateContent with full conversation context (more reliable than chat API)
   const model = client.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 400,
@@ -436,17 +436,19 @@ interface GeminiCopilotResponse {
 
 /**
  * Generate dynamic copilot analysis using Gemini
- * Only updates when new information is needed
+ * Only updates when new information is needed (unless force=true)
  */
 export async function generateCopilotAnalysis(
   sessionId: string,
-  transcript: TranscriptEntry[]
+  transcript: TranscriptEntry[],
+  force: boolean = false
 ): Promise<CopilotAnalysis> {
   const context = getContext(sessionId);
   updateContextFromTranscript(context, transcript);
   
   // Check if we need to update (new messages since last analysis)
   const needsUpdate = 
+    force ||
     transcript.length > context.lastAnalyzedIndex ||
     context.isEmergency ||
     context.customerSentiment === 'frustrated';
@@ -484,8 +486,8 @@ export async function generateCopilotAnalysis(
     };
   }
   
-  // Use Gemini for dynamic analysis
-  if (hasGeminiConfig() && transcript.length >= 2) {
+  // Use Gemini for dynamic analysis (even for 1 message)
+  if (hasGeminiConfig() && transcript.length >= 1) {
     try {
       const geminiSuggestion = await generateGeminiCopilotSuggestion(transcript, context);
       if (geminiSuggestion) {
@@ -516,6 +518,20 @@ export async function generateCopilotAnalysis(
     }
   }
   
+  // Fallback suggestion if Gemini didn't generate anything
+  if (suggestions.length === 0 && transcript.length > 0) {
+    const lastCustomerMsg = [...transcript].reverse().find(t => t.speaker === "CUSTOMER");
+    if (lastCustomerMsg) {
+      suggestions.push({
+        type: "INFO",
+        title: "📋 Conversation Active",
+        content: `Customer's latest message: "${lastCustomerMsg.text.substring(0, 100)}${lastCustomerMsg.text.length > 100 ? '...' : ''}"\n\nListen actively and respond with empathy. Ask clarifying questions if needed.`,
+        confidenceScore: 0.6,
+        metadata: { source: "fallback" },
+      });
+    }
+  }
+  
   // Add frustration alert if detected
   if (context.customerSentiment === 'frustrated' && !suggestions.some(s => s.title.includes('Frustrated'))) {
     suggestions.push({
@@ -542,7 +558,7 @@ async function generateGeminiCopilotSuggestion(
 ): Promise<GeminiCopilotResponse | null> {
   const client = getGeminiClient();
   const model = client.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.4,
       maxOutputTokens: 250,
