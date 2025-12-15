@@ -165,6 +165,7 @@ export function useChatSocket() {
     addAssistantMessage,
     clearMessages,
     setAgentMode,
+    setMessages,
   };
 }
 

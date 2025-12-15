@@ -1,17 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { RetellWebClient } from "retell-client-js-sdk";
 import { io, Socket } from "socket.io-client";
+import { DEMO_SCENARIOS, getScenarioById } from "../../data/demoScenarios";
 import styles from "./CallButton.module.css";
 
 type CallStatus = "idle" | "connecting" | "active" | "ended" | "error";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
-const SCENARIOS = [
-  { id: 'high-bill', label: 'High Bill Dispute', icon: '💰' },
-  { id: 'gas-leak', label: 'Report Gas Leak', icon: '🚨' },
-  { id: 'new-service', label: 'Setup New Service', icon: '🏠' },
-];
 
 export default function CallButton() {
   const [status, setStatus] = useState<CallStatus>("idle");
@@ -29,6 +24,8 @@ export default function CallButton() {
   const sentMessagesRef = useRef<Set<number>>(new Set());
   // Track the last known content for each position to detect changes
   const lastContentRef = useRef<Map<number, string>>(new Map());
+  // Store scenario transcript to prepend to Retell's updates
+  const scenarioTranscriptRef = useRef<Array<{ role: string; content: string }>>([]);
 
   // Auto-scroll transcript to bottom
   useEffect(() => {
@@ -130,9 +127,15 @@ export default function CallButton() {
     });
 
     client.on("update", (update) => {
-      // Handle transcript updates
+      // Handle transcript updates - prepend scenario transcript if exists
       if (update.transcript) {
-        setTranscript(update.transcript);
+        const scenarioMessages = scenarioTranscriptRef.current;
+        if (scenarioMessages.length > 0) {
+          // Merge scenario transcript with Retell's live transcript
+          setTranscript([...scenarioMessages, ...update.transcript]);
+        } else {
+          setTranscript(update.transcript);
+        }
       }
     });
 
@@ -144,7 +147,7 @@ export default function CallButton() {
     };
   }, []);
 
-  const startCall = useCallback(async (scenario?: string) => {
+  const startCall = useCallback(async (scenarioId?: string) => {
     if (!retellClientRef.current) {
       setError("Call client not initialized");
       return;
@@ -156,6 +159,10 @@ export default function CallButton() {
     // Reset tracking refs for new call
     sentMessagesRef.current = new Set();
     lastContentRef.current = new Map();
+    scenarioTranscriptRef.current = []; // Reset scenario transcript
+
+    // Get scenario data if provided
+    const scenario = scenarioId ? getScenarioById(scenarioId) : undefined;
 
     try {
       // Request microphone permission first
@@ -166,7 +173,7 @@ export default function CallButton() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scenario, // Pass selected scenario
+          scenario: scenarioId, // Pass selected scenario ID for context injection
         }),
       });
 
@@ -206,6 +213,51 @@ export default function CallButton() {
         console.log("🔌 Joined voice call room:", data.sessionId);
       }
       // If not connected yet, the connect handler above will join when ready
+
+      // If this is a scenario, load the pre-made transcript
+      if (scenario) {
+        const scenarioTranscript = scenario.transcript.map((entry) => ({
+          role: entry.role === 'agent' ? 'agent' : 'user',
+          content: entry.content,
+        }));
+        
+        // Store scenario transcript in ref for merging with Retell updates
+        scenarioTranscriptRef.current = scenarioTranscript;
+        
+        // Set local transcript to show the pre-made conversation
+        setTranscript(scenarioTranscript);
+        
+        // Mark all scenario messages as already sent (they'll be forwarded below)
+        for (let i = 0; i < scenarioTranscript.length; i++) {
+          sentMessagesRef.current.add(i);
+        }
+        
+        // Forward the pre-made transcript to the agent dashboard
+        // Wait for socket connection if not ready
+        const forwardScenarioTranscript = () => {
+          if (socketRef.current?.connected && sessionIdRef.current) {
+            scenario.transcript.forEach((entry, index) => {
+              setTimeout(() => {
+                socketRef.current?.emit("voice:transcript", {
+                  sessionId: sessionIdRef.current,
+                  role: entry.role,
+                  content: entry.content,
+                  timestamp: Date.now() - ((scenario.transcript.length - index) * 5000),
+                });
+              }, index * 100); // Stagger emissions
+            });
+          }
+        };
+        
+        // Try immediately, or wait for connection
+        if (socketRef.current?.connected) {
+          forwardScenarioTranscript();
+        } else {
+          socketRef.current?.once("connect", forwardScenarioTranscript);
+        }
+        
+        console.log(`🎬 Loaded scenario "${scenario.id}" with ${scenario.transcript.length} messages`);
+      }
 
       // Start the Retell call with the access token
       await retellClientRef.current.startCall({
@@ -357,7 +409,7 @@ export default function CallButton() {
           <div className={styles.scenarios}>
             <p className={styles.scenarioLabel}>Or try a demo scenario:</p>
             <div className={styles.scenarioButtons}>
-              {SCENARIOS.map((s) => (
+              {DEMO_SCENARIOS.map((s) => (
                 <button
                   key={s.id}
                   className={styles.scenarioButton}

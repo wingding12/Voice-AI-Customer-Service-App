@@ -170,6 +170,13 @@
   transform: translateY(-1px);
 }
 
+.scenarioHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: var(--spacing-sm);
+}
+
 /* Message bubble */
 .message {
   display: flex;

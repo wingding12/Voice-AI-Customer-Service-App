@@ -13,6 +13,7 @@
 import { GoogleGenerativeAI, GenerativeModel, Content } from "@google/generative-ai";
 import { env, hasGeminiConfig, hasRetellConfig } from "../../config/env.js";
 import { smartSearch, type RelevantArticle } from "../copilot/ragService.js";
+import { getSession } from "../state/sessionStore.js";
 import type { TranscriptEntry, CopilotSuggestion } from "shared-types";
 // Import the SAME prompts used by Retell voice agent
 import { 
@@ -335,6 +336,10 @@ async function generateGeminiAgentResponse(
     };
   }
   
+  // Check if this is a scenario session with pre-loaded context
+  const session = await getSession(context.sessionId);
+  const scenarioContext = session?.metadata?.aiContext as string | undefined;
+  
   // Build conversation context as text
   const recentMessages = transcript.slice(-8); // Last 8 messages for context
   let conversationHistory = "";
@@ -362,14 +367,20 @@ async function generateGeminiAgentResponse(
   }
   
   // Build the prompt using unified agent prompt (includes knowledge base)
+  // Include scenario context if available for demo scenarios
+  const scenarioInstructions = scenarioContext ? `
+${scenarioContext}
+
+` : '';
+
   const prompt = `${UNIFIED_AGENT_PROMPT}
 
-${conversationHistory}CUSTOMER'S CURRENT MESSAGE: ${currentMessage}
+${scenarioInstructions}${conversationHistory}CUSTOMER'S CURRENT MESSAGE: ${currentMessage}
 ${dynamicContext}
 ${context.customerSentiment === 'frustrated' ? '\n⚠️ Customer seems frustrated - be extra empathetic.\n' : ''}
-Respond naturally as the utility assistant. Be helpful and concise. For text chat, you may use formatting like bullet points.`;
+Respond naturally as the utility assistant. Be helpful and concise. For text chat, you may use formatting like bullet points. Continue the conversation from where it left off.`;
 
-  console.log(`🤖 Retell-unified Gemini request, transcript: ${transcript.length} msgs`);
+  console.log(`🤖 Retell-unified Gemini request, transcript: ${transcript.length} msgs${scenarioContext ? ' (SCENARIO)' : ''}`);
   
   const result = await model.generateContent(prompt);
   const responseText = result.response.text();

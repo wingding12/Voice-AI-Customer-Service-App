@@ -80,25 +80,60 @@ router.post("/web-call", async (req: Request, res: Response) => {
 
     // Determine dynamic variables based on scenario
     let dynamicVariables: Record<string, any> | undefined;
+    let scenarioContext: string | undefined;
     
     if (scenario) {
-      let startContext = "";
-      switch (scenario) {
-        case "high-bill":
-          startContext = "CONTEXT: The customer is calling about a surprisingly high bill ($450 vs typical $150). They are frustrated. Start by acknowledging their concern about the bill amount immediately.";
-          break;
-        case "gas-leak":
-          startContext = "CONTEXT: The customer is reporting a gas leak/smell. Treat this as an IMMEDIATE EMERGENCY. Start by asking if they are safe and telling them to evacuate.";
-          break;
-        case "new-service":
-          startContext = "CONTEXT: The customer wants to set up new service at a new address. Start by asking for the address and move-in date.";
-          break;
-      }
+      // Full scenario contexts for voice AI
+      const scenarios: Record<string, { startContext: string; aiContext: string }> = {
+        "high-bill": {
+          startContext: "CONTEXT: The customer is mid-conversation about a surprisingly high bill ($450 vs typical $150). They were away for 2 weeks last month. Continue helping them investigate the cause.",
+          aiContext: `SCENARIO CONTEXT: You are mid-conversation with a customer about a $450 bill (normally $150). They were out of town for 2 weeks last month.
+
+KEY POINTS ALREADY DISCUSSED:
+- Bill is $450 vs normal $150-160
+- Customer was away for 2 weeks
+- Nothing has changed in their home
+
+Continue the conversation naturally - offer to check if it was an estimated read, suggest reviewing daily usage, or offer a meter test.`
+        },
+        "gas-leak": {
+          startContext: "CONTEXT: This is a GAS LEAK EMERGENCY. The customer has safely evacuated to the sidewalk. Confirm their safety and provide next steps.",
+          aiContext: `SCENARIO CONTEXT: This is a GAS LEAK EMERGENCY. The customer smelled gas and has safely evacuated.
+
+CRITICAL ACTIONS COMPLETED:
+- Customer has evacuated the home
+- They are on the sidewalk, safe
+
+NEXT STEPS:
+1. Have them call 911
+2. Provide gas emergency hotline: 1-800-GAS-LEAK
+3. Confirm their address
+4. Advise them to stay at least 100 feet away
+5. Reassure them - no charge for gas leak investigations`
+        },
+        "new-service": {
+          startContext: "CONTEXT: The customer is setting up new service. They're moving Saturday the 21st to 742 Evergreen Terrace, Apt 4B. They need both electric and gas. Continue the enrollment.",
+          aiContext: `SCENARIO CONTEXT: Customer is setting up new utility service.
+
+DETAILS COLLECTED:
+- Move-in date: Saturday the 21st at 10am
+- Address: 742 Evergreen Terrace, Apartment 4B
+- Services needed: Both electric AND gas
+
+NEXT STEPS:
+1. Explain connection fee ($35 standard)
+2. Ask about previous service with PowerGrid (may have deposit on file)
+3. Offer autopay ($2/month discount)
+4. Confirm contact information`
+        }
+      };
       
-      if (startContext) {
+      const scenarioData = scenarios[scenario];
+      if (scenarioData) {
         dynamicVariables = {
-          start_context: startContext
+          start_context: scenarioData.startContext
         };
+        scenarioContext = scenarioData.aiContext;
       }
     }
 
@@ -109,7 +144,7 @@ router.post("/web-call", async (req: Request, res: Response) => {
       customer_id: customerId,
     }, dynamicVariables);
 
-    // Create session in Redis
+    // Create session in Redis with scenario context if available
     await createSession(sessionId, {
       callId: sessionId,
       customerId: customerId || null,
@@ -122,6 +157,8 @@ router.post("/web-call", async (req: Request, res: Response) => {
         channel: "voice",
         serviceType: "utility",
         retellCallId: webCall.call_id,
+        scenarioId: scenario,
+        aiContext: scenarioContext,
       },
     });
 

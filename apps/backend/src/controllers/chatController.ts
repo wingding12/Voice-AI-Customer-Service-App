@@ -12,6 +12,7 @@ import {
   processMessage,
   sendHumanResponse,
   endChatSession,
+  startScenarioSession,
 } from "../services/chat/chatService.js";
 import type { ChatRequest } from "shared-types";
 
@@ -187,4 +188,42 @@ router.post("/switch", async (req: Request, res: Response) => {
 });
 
 export { router as chatController };
+
+/**
+ * POST /api/chat/scenario
+ *
+ * Start a demo scenario with a pre-made transcript
+ *
+ * Body:
+ * {
+ *   scenarioId: string,
+ *   transcript: Array<{ speaker: 'AI' | 'CUSTOMER', text: string, timestamp: number }>,
+ *   aiContext: string
+ * }
+ */
+router.post("/scenario", async (req: Request, res: Response) => {
+  try {
+    const { scenarioId, transcript, aiContext } = req.body;
+
+    if (!scenarioId) {
+      res.status(400).json({ error: "scenarioId is required" });
+      return;
+    }
+
+    if (!transcript || !Array.isArray(transcript)) {
+      res.status(400).json({ error: "transcript is required" });
+      return;
+    }
+
+    const result = await startScenarioSession(scenarioId, transcript, aiContext);
+
+    res.json({
+      success: true,
+      sessionId: result.sessionId,
+    });
+  } catch (error) {
+    console.error("❌ Scenario start error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 

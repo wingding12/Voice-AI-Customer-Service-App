@@ -360,3 +360,89 @@ export async function endChatSession(sessionId: string): Promise<void> {
   // Clear AI context cache
   clearContext(sessionId);
 }
+
+/**
+ * Start a demo scenario with pre-made transcript
+ * This creates a session with existing conversation history
+ * and notifies the agent dashboard
+ */
+export async function startScenarioSession(
+  scenarioId: string,
+  transcript: Array<{ speaker: 'AI' | 'CUSTOMER'; text: string; timestamp: number }>,
+  aiContext: string
+): Promise<{ sessionId: string }> {
+  const sessionId = `chat-${uuidv4()}`;
+  const startTime = transcript[0]?.timestamp || Date.now();
+
+  // Create the session with pre-populated transcript
+  const session: CallSession = {
+    callId: sessionId,
+    customerId: null,
+    mode: "AI_AGENT",
+    status: "active",
+    startTime,
+    transcript: transcript.map(t => ({
+      speaker: t.speaker,
+      text: t.text,
+      timestamp: t.timestamp,
+    })),
+    switchCount: 0,
+    metadata: {
+      channel: "chat",
+      serviceType: "utility",
+      scenarioId,
+      aiContext, // Store the context for the AI to use
+    },
+  };
+
+  await createSession(sessionId, session);
+
+  // Create database record
+  try {
+    await prisma.call.create({
+      data: {
+        id: sessionId,
+        mode: "AI_AGENT",
+        status: "ACTIVE",
+        startedAt: new Date(startTime),
+        transcript: transcript as any,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create scenario chat record:", error);
+  }
+
+  // Get the last message for the preview
+  const lastMessage = transcript[transcript.length - 1];
+  const previewSpeaker = lastMessage?.speaker === 'AI' ? 'AI' : 'Customer';
+  const previewText = lastMessage?.text.substring(0, 50) || 'Demo scenario';
+
+  // Notify agents about the new chat in queue
+  emitQueueAdd({
+    id: sessionId,
+    type: "chat",
+    customerName: `Demo: ${scenarioId.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}`,
+    waitTime: 0,
+    preview: `${previewSpeaker}: ${previewText}...`,
+    mode: "AI_AGENT",
+    createdAt: startTime,
+  });
+
+  // Emit each transcript entry to the agent dashboard with slight delays
+  // so they appear in order
+  for (let i = 0; i < transcript.length; i++) {
+    const entry = transcript[i];
+    // Small delay between emissions to ensure proper ordering
+    setTimeout(() => {
+      emitTranscriptUpdate(sessionId, {
+        speaker: entry.speaker,
+        text: entry.text,
+        timestamp: entry.timestamp,
+      });
+    }, i * 50);
+  }
+
+  console.log(`🎬 Started scenario "${scenarioId}" with session ${sessionId}`);
+
+  return { sessionId };
+}

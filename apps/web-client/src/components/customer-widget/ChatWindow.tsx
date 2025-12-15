@@ -9,28 +9,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChatSocket } from '../../hooks/useChatSocket';
+import { DEMO_SCENARIOS, getScenarioById } from '../../data/demoScenarios';
 import styles from './ChatWindow.module.css';
-
-const SCENARIOS = [
-  { 
-    id: 'high-bill', 
-    label: 'High Bill Dispute', 
-    icon: '💰',
-    message: "I just got my bill and it's $450! This is way too high compared to normal."
-  },
-  { 
-    id: 'gas-leak', 
-    label: 'Report Gas Leak', 
-    icon: '🚨',
-    message: "I smell something like rotten eggs in my kitchen. I'm worried it's a gas leak."
-  },
-  { 
-    id: 'new-service', 
-    label: 'Setup New Service', 
-    icon: '🏠',
-    message: "I'm moving to a new apartment next week and need to set up electricity."
-  },
-];
 
 export default function ChatWindow() {
   const {
@@ -42,6 +22,7 @@ export default function ChatWindow() {
     addLocalMessage,
     addAssistantMessage,
     setAgentMode,
+    setMessages,
   } = useChatSocket();
 
   const [input, setInput] = useState('');
@@ -52,6 +33,53 @@ export default function ChatWindow() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Start a demo scenario with pre-made transcript
+  const startScenario = async (scenarioId: string) => {
+    const scenario = getScenarioById(scenarioId);
+    if (!scenario) return;
+
+    setIsLoading(true);
+    try {
+      // Call backend to create session with scenario
+      const response = await fetch('/api/chat/scenario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenarioId,
+          transcript: scenario.transcript.map((entry, index) => ({
+            speaker: entry.role === 'agent' ? 'AI' : 'CUSTOMER',
+            text: entry.content,
+            timestamp: Date.now() - ((scenario.transcript.length - index) * 5000),
+          })),
+          aiContext: scenario.aiContext,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to start scenario');
+
+      const data = await response.json();
+      
+      // Join the session room
+      joinSession(data.sessionId);
+
+      // Set the messages locally from the scenario transcript
+      const localMessages = scenario.transcript.map((entry, index) => ({
+        id: `scenario-${index}`,
+        role: entry.role === 'agent' ? 'assistant' : 'user',
+        content: entry.content,
+        timestamp: Date.now() - ((scenario.transcript.length - index) * 5000),
+        isHuman: false,
+      }));
+      setMessages(localMessages as any);
+
+    } catch (error) {
+      console.error('Scenario error:', error);
+      addAssistantMessage('Sorry, there was an error starting the demo. Please try again.', false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sendMessage = async (content: string) => {
     // Add message to local state immediately
@@ -213,18 +241,22 @@ export default function ChatWindow() {
           <div className={styles.welcome}>
             <span className={styles.welcomeIcon}>⚡</span>
             <h3>Welcome to Utility Support!</h3>
-            <p>I'm your AI assistant. Start a scenario to see how I can help:</p>
+            <p>Start a demo scenario to experience the AI assistant:</p>
             <div className={styles.quickActions}>
-              {SCENARIOS.map((scenario) => (
+              {DEMO_SCENARIOS.map((scenario) => (
                 <button
                   key={scenario.id}
                   className={styles.quickAction}
-                  onClick={() => sendMessage(scenario.message)}
+                  onClick={() => startScenario(scenario.id)}
+                  disabled={isLoading}
                 >
                   {scenario.icon} {scenario.label}
                 </button>
               ))}
             </div>
+            <p className={styles.scenarioHint}>
+              Each scenario starts mid-conversation so you can see the AI in action
+            </p>
           </div>
         )}
 
