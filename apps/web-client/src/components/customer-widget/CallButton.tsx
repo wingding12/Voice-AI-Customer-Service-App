@@ -11,6 +11,8 @@ export default function CallButton() {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [agentMode, setAgentMode] = useState<"AI" | "HUMAN">("AI");
   const [transcript, setTranscript] = useState<
     Array<{ role: string; content: string }>
   >([]);
@@ -199,6 +201,43 @@ export default function CallButton() {
     }
   };
 
+  // Transfer to human representative
+  const transferToHuman = useCallback(async () => {
+    if (!sessionIdRef.current || isTransferring) return;
+    
+    setIsTransferring(true);
+    try {
+      const response = await fetch(`${API_URL}/api/switch/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callId: sessionIdRef.current,
+          direction: "AI_TO_HUMAN",
+          reason: "CUSTOMER_BUTTON",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to transfer");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setAgentMode("HUMAN");
+        // Add a system message to transcript
+        setTranscript((prev) => [
+          ...prev,
+          { role: "system", content: "Connecting you with a human representative..." },
+        ]);
+      }
+    } catch (err) {
+      console.error("Transfer error:", err);
+      setError("Unable to transfer. Please try again.");
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [isTransferring]);
+
   const isInCall = status === "active" || status === "connecting";
 
   return (
@@ -247,6 +286,15 @@ export default function CallButton() {
             >
               {isMuted ? "🔇 Unmute" : "🎙️ Mute"}
             </button>
+            {agentMode === "AI" && (
+              <button
+                className={`${styles.controlButton} ${styles.humanButton}`}
+                onClick={transferToHuman}
+                disabled={isTransferring}
+              >
+                {isTransferring ? "⏳ Connecting..." : "👤 Talk to Human"}
+              </button>
+            )}
             <button
               className={`${styles.controlButton} ${styles.endButton}`}
               onClick={endCall}
@@ -256,9 +304,9 @@ export default function CallButton() {
           </div>
         )}
 
-        {!isInCall && (
-          <div className={styles.hint}>
-            Say "speak to a human" during the call to transfer
+        {status === "active" && agentMode === "HUMAN" && (
+          <div className={styles.humanModeIndicator}>
+            👤 Connected with Human Representative
           </div>
         )}
       </div>

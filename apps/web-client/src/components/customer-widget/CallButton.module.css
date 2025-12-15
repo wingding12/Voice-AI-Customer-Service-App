@@ -180,6 +180,33 @@
   color: white;
 }
 
+.controlButton.humanButton {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: var(--status-ai);
+  color: var(--status-ai);
+}
+
+.controlButton.humanButton:hover {
+  background: var(--status-ai);
+  color: white;
+}
+
+.controlButton.humanButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.humanModeIndicator {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.15) 0%, transparent 100%);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--status-ai);
+  text-align: center;
+}
+
 .hint {
   font-size: 0.75rem;
   color: var(--text-muted);
