@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npx serve dist -s -l 5173"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+

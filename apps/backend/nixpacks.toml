@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = [
+    "cd ../.. && npm install",
+    "cd ../.. && npm run build -w database",
+    "cd ../.. && npm run build -w shared-types"
+]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
+
