@@ -2,10 +2,13 @@
  * Chat Service - Utility Company Edition
  *
  * Handles text chat messages for utility customer service:
- * - Uses LLM-powered AI agent for intelligent responses
+ * - Uses Retell AI for chat responses (same bot as voice)
  * - Supports seamless AI-to-Human handoff
  * - Copilot integration for human reps
  * - Real-time updates via Socket.io
+ * 
+ * Both voice calls and text chats use the SAME Retell bot,
+ * sharing conversation history and context.
  */
 
 import { prisma } from "database";
@@ -24,7 +27,12 @@ import {
   emitQueueMessagePreview,
   emitCopilotSuggestion,
 } from "../../sockets/agentGateway.js";
-import { generateAgentResponse, generateCopilotAnalysis, clearContext } from "../ai/llmService.js";
+import { generateCopilotAnalysis, clearContext } from "../ai/llmService.js";
+import { 
+  sendChatMessage, 
+  endChatSession as endRetellChatSession,
+  isChatConfigured,
+} from "../voice/retellClient.js";
 import type { CallSession, ChatRequest, ChatResponse, TranscriptEntry } from "shared-types";
 
 /**
@@ -113,9 +121,21 @@ export async function processMessage(
   let reply: string;
 
   if (session.mode === "AI_AGENT") {
-    // Use Gemini-powered AI agent for all responses
-    const aiResponse = await generateAgentResponse(sessionId, transcript);
-    reply = aiResponse.message;
+    // Use Retell AI for chat responses (same bot as voice calls)
+    if (isChatConfigured()) {
+      try {
+        const retellResponse = await sendChatMessage(sessionId, message);
+        reply = retellResponse.response;
+        
+        console.log(`🤖 Retell chat response for ${sessionId}: ${reply.substring(0, 100)}...`);
+      } catch (error) {
+        console.error("Retell chat error:", error);
+        reply = "I'm sorry, I'm having trouble processing your request. Please try again or ask to speak with a representative.";
+      }
+    } else {
+      // Fallback if Retell chat is not configured
+      reply = "Hello! I'm your utility assistant. How can I help you today? (Note: Full AI is not configured yet)";
+    }
 
     // Add AI response to transcript
     const aiTimestamp = Date.now();
@@ -130,9 +150,17 @@ export async function processMessage(
     // Update queue preview
     emitQueueMessagePreview(sessionId, `AI: ${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}`);
 
-    // Handle escalation after sending the AI's response
-    if (aiResponse.shouldEscalate) {
-      await switchToHuman(sessionId, aiResponse.escalationReason || "AI_ESCALATION");
+    // Check if response indicates escalation to human
+    const lowerReply = reply.toLowerCase();
+    const shouldEscalate = 
+      lowerReply.includes("connect you with") ||
+      lowerReply.includes("transfer you") ||
+      lowerReply.includes("human representative") ||
+      lowerReply.includes("speak with a representative") ||
+      lowerReply.includes("connecting you");
+    
+    if (shouldEscalate) {
+      await switchToHuman(sessionId, "AI_ESCALATION");
     }
   } else {
     // Human mode - notify the customer that rep will respond
@@ -200,20 +228,25 @@ export async function switchBackToAI(sessionId: string): Promise<string> {
     preview: "Returned to AI assistant",
   });
 
-  // Let Gemini generate a welcome back message based on conversation context
-  const session = await getSession(sessionId);
-  const transcript = session?.transcript || [];
+  // Let Retell generate a welcome back message
+  let aiMessage: string;
   
-  // Add a system context message to help Gemini understand the switch
-  const contextTranscript = [
-    ...transcript,
-    { speaker: "CUSTOMER" as const, text: "[Customer has switched back to AI assistant from human representative]", timestamp: Date.now() }
-  ];
+  if (isChatConfigured()) {
+    try {
+      const retellResponse = await sendChatMessage(
+        sessionId, 
+        "[Customer has switched back to the AI assistant from a human representative. Please acknowledge and continue helping them.]"
+      );
+      aiMessage = retellResponse.response;
+    } catch (error) {
+      console.error("Retell chat error on switch back:", error);
+      aiMessage = "I'm back! How else can I help you with your utility needs?";
+    }
+  } else {
+    aiMessage = "I'm back! How can I continue to help you?";
+  }
   
-  const aiResponse = await generateAgentResponse(sessionId, contextTranscript);
-  const aiMessage = aiResponse.message;
   const timestamp = Date.now();
-  
   await appendTranscript(sessionId, "AI", aiMessage, timestamp);
 
   emitTranscriptUpdate(sessionId, {
@@ -326,6 +359,15 @@ export async function endChatSession(sessionId: string): Promise<void> {
 
   if (session) {
     await updateSession(sessionId, { status: "ended" });
+  }
+
+  // End Retell chat session if configured
+  if (isChatConfigured()) {
+    try {
+      await endRetellChatSession(sessionId);
+    } catch (error) {
+      console.error("Failed to end Retell chat session:", error);
+    }
   }
 
   // Clear AI context cache

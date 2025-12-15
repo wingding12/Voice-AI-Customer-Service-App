@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { RetellWebClient } from "retell-client-js-sdk";
+import { io, Socket } from "socket.io-client";
 import styles from "./CallButton.module.css";
 
 type CallStatus = "idle" | "connecting" | "active" | "ended" | "error";
@@ -17,10 +18,34 @@ export default function CallButton() {
   const retellClientRef = useRef<RetellWebClient | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const lastTranscriptLengthRef = useRef<number>(0);
 
   // Auto-scroll transcript to bottom
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcript]);
+
+  // Forward new transcript entries to the backend via Socket.io
+  useEffect(() => {
+    if (!socketRef.current?.connected || !sessionIdRef.current) {
+      return;
+    }
+    
+    // Only send new entries (compare with last known length)
+    const newEntries = transcript.slice(lastTranscriptLengthRef.current);
+    lastTranscriptLengthRef.current = transcript.length;
+    
+    // Emit each new transcript entry to the backend
+    for (const entry of newEntries) {
+      console.log(`📤 Forwarding transcript [${sessionIdRef.current}]:`, entry.role, entry.content.substring(0, 30));
+      socketRef.current.emit("voice:transcript", {
+        sessionId: sessionIdRef.current,
+        role: entry.role,
+        content: entry.content,
+        timestamp: Date.now(),
+      });
+    }
   }, [transcript]);
 
   // Initialize Retell client on mount
@@ -76,6 +101,7 @@ export default function CallButton() {
     setStatus("connecting");
     setError(null);
     setTranscript([]);
+    lastTranscriptLengthRef.current = 0;
 
     try {
       // Request microphone permission first
@@ -100,6 +126,31 @@ export default function CallButton() {
 
       sessionIdRef.current = data.sessionId;
 
+      // Connect to Socket.io to forward transcript updates to agents
+      if (!socketRef.current) {
+        socketRef.current = io(API_URL, {
+          transports: ["websocket", "polling"],
+        });
+        
+        socketRef.current.on("connect", () => {
+          console.log("🔌 Voice call socket connected:", socketRef.current?.id);
+          // Join the room once connected
+          if (sessionIdRef.current) {
+            socketRef.current?.emit("voice:join", { sessionId: sessionIdRef.current });
+            console.log("🔌 Joined voice call room:", sessionIdRef.current);
+          }
+        });
+        
+        socketRef.current.on("disconnect", () => {
+          console.log("🔌 Voice call socket disconnected");
+        });
+      } else if (socketRef.current.connected) {
+        // Socket already connected, join immediately
+        socketRef.current.emit("voice:join", { sessionId: data.sessionId });
+        console.log("🔌 Joined voice call room:", data.sessionId);
+      }
+      // If not connected yet, the connect handler above will join when ready
+
       // Start the Retell call with the access token
       await retellClientRef.current.startCall({
         accessToken: data.accessToken,
@@ -119,6 +170,12 @@ export default function CallButton() {
     if (retellClientRef.current) {
       retellClientRef.current.stopCall();
     }
+    
+    // Notify backend that call ended
+    if (socketRef.current && sessionIdRef.current) {
+      socketRef.current.emit("voice:end", { sessionId: sessionIdRef.current });
+    }
+    
     setStatus("ended");
     setTimeout(() => setStatus("idle"), 2000);
   }, []);

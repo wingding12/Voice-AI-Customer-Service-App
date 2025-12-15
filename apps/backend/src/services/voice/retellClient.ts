@@ -11,7 +11,7 @@
 
 import Retell from "retell-sdk";
 import { createHmac } from "crypto";
-import { env, hasRetellConfig } from "../../config/env.js";
+import { env, hasRetellConfig, hasRetellChatConfig } from "../../config/env.js";
 
 // Singleton Retell client
 let retellClient: Retell | null = null;
@@ -584,5 +584,221 @@ Remember: You are speaking on a phone call. Keep responses brief and natural. Us
   };
 }
 
-// Re-export config check
-export { hasRetellConfig };
+// ===========================================
+// Chat Agent Integration
+// ===========================================
+
+/**
+ * Chat session state mapping (our sessionId -> Retell chat_id)
+ */
+const chatSessionMap = new Map<string, string>();
+
+/**
+ * Create a new Retell chat session
+ * 
+ * @param ourSessionId - Our internal session ID
+ * @param metadata - Optional metadata for the chat
+ * @returns The Retell chat_id
+ */
+export async function createChatSession(
+  ourSessionId: string,
+  metadata?: Record<string, unknown>
+): Promise<{
+  chat_id: string;
+  agent_id: string;
+}> {
+  if (!hasRetellChatConfig()) {
+    throw new Error("Retell Chat is not configured. Set RETELL_CHAT_AGENT_ID in environment.");
+  }
+
+  const client = getRetellClient();
+
+  const response = await client.chat.create({
+    agent_id: env.RETELL_CHAT_AGENT_ID!,
+    metadata: {
+      internal_session_id: ourSessionId,
+      ...metadata,
+    },
+  });
+
+  console.log(`💬 Retell chat session created: ${response.chat_id} for ${ourSessionId}`);
+
+  // Store mapping
+  chatSessionMap.set(ourSessionId, response.chat_id);
+
+  return {
+    chat_id: response.chat_id,
+    agent_id: response.agent_id,
+  };
+}
+
+/**
+ * Get or create a Retell chat session for our internal session ID
+ */
+export async function getOrCreateChatSession(
+  ourSessionId: string,
+  metadata?: Record<string, unknown>
+): Promise<string> {
+  // Check if we already have a mapping
+  let chatId = chatSessionMap.get(ourSessionId);
+  
+  if (!chatId) {
+    const result = await createChatSession(ourSessionId, metadata);
+    chatId = result.chat_id;
+  }
+
+  return chatId;
+}
+
+/**
+ * Send a message to the Retell chat and get a response
+ * 
+ * @param ourSessionId - Our internal session ID
+ * @param message - The user's message
+ * @returns The AI's response message(s)
+ */
+export async function sendChatMessage(
+  ourSessionId: string,
+  message: string
+): Promise<{
+  response: string;
+  messages: Array<{ role: string; content: string; timestamp: number }>;
+}> {
+  if (!hasRetellChatConfig()) {
+    throw new Error("Retell Chat is not configured.");
+  }
+
+  // Get or create the chat session
+  const chatId = await getOrCreateChatSession(ourSessionId);
+  const client = getRetellClient();
+
+  console.log(`💬 Sending message to Retell chat ${chatId}: "${message.substring(0, 50)}..."`);
+
+  const response = await client.chat.createChatCompletion({
+    chat_id: chatId,
+    content: message,
+  });
+
+  // Extract agent messages from the response
+  const agentMessages: Array<{ role: string; content: string; timestamp: number }> = [];
+  let fullResponse = "";
+
+  for (const msg of response.messages) {
+    if ("role" in msg && msg.role === "agent" && "content" in msg) {
+      agentMessages.push({
+        role: "agent",
+        content: msg.content,
+        timestamp: msg.created_timestamp,
+      });
+      fullResponse += (fullResponse ? "\n" : "") + msg.content;
+    }
+  }
+
+  console.log(`✅ Retell chat response: "${fullResponse.substring(0, 100)}..."`);
+
+  return {
+    response: fullResponse || "I'm here to help! What can I assist you with?",
+    messages: agentMessages,
+  };
+}
+
+/**
+ * Get chat session details including full transcript
+ */
+export async function getChatDetails(ourSessionId: string): Promise<{
+  chat_id: string;
+  status: string;
+  transcript?: string;
+  messages?: Array<{ role: string; content: string; timestamp: number }>;
+}> {
+  const chatId = chatSessionMap.get(ourSessionId);
+  
+  if (!chatId) {
+    throw new Error(`No chat session found for ${ourSessionId}`);
+  }
+
+  const client = getRetellClient();
+  const response = await client.chat.retrieve(chatId);
+
+  const messages: Array<{ role: string; content: string; timestamp: number }> = [];
+  
+  if (response.message_with_tool_calls) {
+    for (const msg of response.message_with_tool_calls) {
+      if ("role" in msg && (msg.role === "agent" || msg.role === "user") && "content" in msg) {
+        messages.push({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.created_timestamp,
+        });
+      }
+    }
+  }
+
+  return {
+    chat_id: response.chat_id,
+    status: response.chat_status,
+    transcript: response.transcript,
+    messages,
+  };
+}
+
+/**
+ * End a Retell chat session
+ */
+export async function endChatSession(ourSessionId: string): Promise<void> {
+  const chatId = chatSessionMap.get(ourSessionId);
+  
+  if (!chatId) {
+    console.warn(`No chat session found for ${ourSessionId} to end`);
+    return;
+  }
+
+  try {
+    const client = getRetellClient();
+    await client.chat.end(chatId);
+    console.log(`💬 Retell chat session ended: ${chatId}`);
+  } catch (error) {
+    console.error(`Failed to end chat session:`, error);
+  }
+
+  // Clean up mapping
+  chatSessionMap.delete(ourSessionId);
+}
+
+/**
+ * Create a Retell chat agent (for setup)
+ * This creates a chat agent using the same LLM as the voice agent
+ */
+export async function createChatAgent(llmId: string): Promise<{
+  agent_id: string;
+  agent_name: string;
+}> {
+  const client = getRetellClient();
+
+  const response = await client.chatAgent.create({
+    agent_name: "Utility Customer Service Chat Agent",
+    response_engine: {
+      type: "retell-llm",
+      llm_id: llmId,
+    },
+    language: "en-US",
+  });
+
+  console.log(`✅ Created Retell chat agent: ${response.agent_id}`);
+  console.log(`   Add this to your .env: RETELL_CHAT_AGENT_ID=${response.agent_id}`);
+
+  return {
+    agent_id: response.agent_id,
+    agent_name: response.agent_name || "Utility Customer Service Chat Agent",
+  };
+}
+
+/**
+ * Check if Retell chat is configured
+ */
+export function isChatConfigured(): boolean {
+  return hasRetellChatConfig();
+}
+
+// Re-export config checks
+export { hasRetellConfig, hasRetellChatConfig };

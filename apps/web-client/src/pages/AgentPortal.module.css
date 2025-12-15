@@ -201,6 +201,51 @@
   overflow-x: hidden;
 }
 
+/* Voice Call Header */
+.voiceCallHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(90deg, rgba(0, 212, 170, 0.1) 0%, rgba(0, 212, 170, 0.05) 100%);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.voiceIcon {
+  font-size: 1.25rem;
+}
+
+.voiceLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.liveIndicator {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--accent-danger);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-danger);
+  border-radius: 50%;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 /* Copilot Panel (Right) */
 .copilotPanel {
   background: var(--bg-secondary);

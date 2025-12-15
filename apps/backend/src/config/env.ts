@@ -1,7 +1,38 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { resolve } from 'path';
+import { existsSync, realpathSync } from 'fs';
 
-dotenv.config();
+// Try multiple locations for .env file
+// 1. Current working directory (when running from project root)
+// 2. Backend folder (when running from apps/backend)
+// 3. Two levels up from backend (project root when cwd is apps/backend)
+const envPaths = [
+  resolve(process.cwd(), '.env'),
+  resolve(process.cwd(), '../../.env'),
+  resolve(process.cwd(), 'apps/backend/.env'),
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    // Resolve symlinks to get the actual file path
+    const realPath = realpathSync(envPath);
+    const result = dotenv.config({ path: realPath });
+    if (result.error) {
+      console.error(`❌ Error loading .env from: ${realPath}`, result.error);
+    } else {
+      console.log(`✅ Loaded .env from: ${realPath}`);
+      envLoaded = true;
+      break;
+    }
+  }
+}
+
+if (!envLoaded) {
+  console.warn('⚠️ No .env file found, using environment variables');
+  dotenv.config(); // Fall back to default behavior
+}
 
 /**
  * Environment validation schema.
@@ -36,6 +67,7 @@ const envSchema = z.object({
   // Retell AI (optional for Phase 0)
   RETELL_API_KEY: z.string().optional(),
   RETELL_AGENT_ID: z.string().optional(),
+  RETELL_CHAT_AGENT_ID: z.string().optional(),
   
   // AssemblyAI (optional for Phase 0)
   ASSEMBLYAI_API_KEY: z.string().optional(),
@@ -67,6 +99,7 @@ function validateEnv() {
     
     if (!env.TELNYX_API_KEY) missingOptional.push('TELNYX_API_KEY');
     if (!env.RETELL_API_KEY) missingOptional.push('RETELL_API_KEY');
+    if (!env.RETELL_CHAT_AGENT_ID) missingOptional.push('RETELL_CHAT_AGENT_ID');
     if (!env.ASSEMBLYAI_API_KEY) missingOptional.push('ASSEMBLYAI_API_KEY');
     if (!env.OPENAI_API_KEY) missingOptional.push('OPENAI_API_KEY');
     if (!env.GEMINI_API_KEY) missingOptional.push('GEMINI_API_KEY');
@@ -91,6 +124,10 @@ export function hasTelnyxConfig(): boolean {
 
 export function hasRetellConfig(): boolean {
   return !!(env.RETELL_API_KEY && env.RETELL_AGENT_ID);
+}
+
+export function hasRetellChatConfig(): boolean {
+  return !!(env.RETELL_API_KEY && env.RETELL_CHAT_AGENT_ID);
 }
 
 export function hasAssemblyAIConfig(): boolean {

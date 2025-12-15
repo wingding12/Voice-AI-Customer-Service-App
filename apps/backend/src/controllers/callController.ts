@@ -157,7 +157,7 @@ async function handleCallInitiated(
 
       // Retell will handle the conversation via its own greeting
       // We just answer the call and let Retell take over
-      const greeting = `Welcome to Utility Customer Service. Our AI assistant will help you now. Press 0 at any time for a human.`;
+      const greeting = `Welcome to Utility Support. Our AI assistant will help you now. Press 0 at any time for a human.`;
       res.set("Content-Type", "application/xml");
       res.send(TeXML.answerAndGreet(greeting, true));
     } catch (error) {

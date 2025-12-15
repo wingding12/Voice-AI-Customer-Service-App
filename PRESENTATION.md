@@ -1,5 +1,6 @@
 # AI Customer Service Platform
-## Intelligent Voice & Chat Support
+
+## AI-Powered Customer Service Platform
 
 ---
 
@@ -18,9 +19,9 @@
 
 # 1️⃣ Project Summary
 
-## What is This Platform?
+## What is this platform?
 
-This is an intelligent customer service platform that combines:
+An intelligent customer service platform that combines:
 
 - 🤖 **AI Voice Agent** — Handles customer calls with natural conversation
 - 👤 **AI Copilot** — Assists human representatives in real-time
@@ -29,12 +30,14 @@ This is an intelligent customer service platform that combines:
 ### The Problem We Solve
 
 Traditional customer service systems force a choice:
+
 - **Pure AI**: Fast but impersonal, can't handle complex issues
 - **Pure Human**: Personal but expensive, long wait times
 
 ### Our Solution: Human-in-the-Loop (HITL)
 
 This platform bridges both worlds:
+
 - AI handles routine inquiries instantly
 - Humans step in for complex cases with full context
 - Switch happens **in real-time** without interruption
@@ -44,29 +47,32 @@ This platform bridges both worlds:
 # 2️⃣ Technology Stack
 
 ## Backend
-| Technology | Purpose |
-|------------|---------|
-| **Node.js + Express** | API server, webhook handlers |
-| **TypeScript** | Type-safe development |
-| **PostgreSQL + pgvector** | Data storage + vector search |
-| **Redis** | Session state, real-time context |
-| **Prisma ORM** | Type-safe database access |
+
+| Technology                | Purpose                          |
+| ------------------------- | -------------------------------- |
+| **Node.js + Express**     | API server, webhook handlers     |
+| **TypeScript**            | Type-safe development            |
+| **PostgreSQL + pgvector** | Data storage + vector search     |
+| **Redis**                 | Session state, real-time context |
+| **Prisma ORM**            | Type-safe database access        |
 
 ## Frontend
-| Technology | Purpose |
-|------------|---------|
-| **React 18** | UI components |
-| **Vite** | Fast development & bundling |
-| **Socket.io** | Real-time updates |
-| **TypeScript** | Type safety |
+
+| Technology     | Purpose                     |
+| -------------- | --------------------------- |
+| **React 18**   | UI components               |
+| **Vite**       | Fast development & bundling |
+| **Socket.io**  | Real-time updates           |
+| **TypeScript** | Type safety                 |
 
 ## AI & Voice Services
-| Service | Purpose |
-|---------|---------|
-| **Retell AI** | Voice agent (STT + LLM + TTS) |
-| **Google Gemini** | Text chat AI + Copilot |
-| **Telnyx** | Phone network & telephony |
-| **OpenAI** | Vector embeddings (RAG) |
+
+| Service           | Purpose                       |
+| ----------------- | ----------------------------- |
+| **Retell AI**     | Voice agent (STT + LLM + TTS) |
+| **Google Gemini** | Text chat AI + Copilot        |
+| **Telnyx**        | Phone network & telephony     |
+| **OpenAI**        | Vector embeddings (RAG)       |
 
 ---
 
@@ -125,6 +131,7 @@ This platform bridges both worlds:
 Traditional call forwarding = drops the call
 
 Our approach:
+
 1. Customer joins a **digital conference room**
 2. AI Agent joins (speaking)
 3. Human Rep joins (muted, listening)
@@ -179,13 +186,13 @@ Result: Zero interruption, full context preserved
 
 **Primary Use Case: Specialized for utility customer service**
 
-| Scenario | AI Handles | Human Handles |
-|----------|-----------|---------------|
-| Bill inquiries | ✅ Automatic | Complex disputes |
-| Payment options | ✅ Automatic | Hardship cases |
-| Outage reports | ✅ Automatic | Safety emergencies |
-| Service changes | ✅ Automatic | Special requests |
-| Account lookup | ✅ Automatic | Identity verification |
+| Scenario        | AI Handles   | Human Handles         |
+| --------------- | ------------ | --------------------- |
+| Bill inquiries  | ✅ Automatic | Complex disputes      |
+| Payment options | ✅ Automatic | Hardship cases        |
+| Outage reports  | ✅ Automatic | Safety emergencies    |
+| Service changes | ✅ Automatic | Special requests      |
+| Account lookup  | ✅ Automatic | Identity verification |
 
 ### Example Flow: High Bill Inquiry
 
@@ -222,31 +229,31 @@ Result: Zero interruption, full context preserved
 
 ## For Customers
 
-| Benefit | Impact |
-|---------|--------|
-| **No wait times** | AI answers instantly |
-| **24/7 availability** | Help anytime |
-| **Seamless escalation** | Human when needed |
-| **Consistent quality** | AI doesn't have bad days |
+| Benefit                 | Impact                   |
+| ----------------------- | ------------------------ |
+| **No wait times**       | AI answers instantly     |
+| **24/7 availability**   | Help anytime             |
+| **Seamless escalation** | Human when needed        |
+| **Consistent quality**  | AI doesn't have bad days |
 
 ## For Agents
 
-| Benefit | Impact |
-|---------|--------|
-| **AI Copilot** | Answers at their fingertips |
-| **Context on arrival** | No "please repeat your issue" |
-| **Handle complex cases** | AI filters easy ones |
-| **Reduced burnout** | Focus on meaningful work |
+| Benefit                  | Impact                        |
+| ------------------------ | ----------------------------- |
+| **AI Copilot**           | Answers at their fingertips   |
+| **Context on arrival**   | No "please repeat your issue" |
+| **Handle complex cases** | AI filters easy ones          |
+| **Reduced burnout**      | Focus on meaningful work      |
 
 ## For Business
 
-| Benefit | Impact |
-|---------|--------|
-| **60-70% AI resolution** | Dramatic cost savings |
-| **Improved CSAT** | Faster resolution times |
-| **Scalability** | Handle volume spikes |
-| **Analytics** | Data-driven optimization |
-| **Compliance** | Full conversation logs |
+| Benefit                  | Impact                   |
+| ------------------------ | ------------------------ |
+| **60-70% AI resolution** | Dramatic cost savings    |
+| **Improved CSAT**        | Faster resolution times  |
+| **Scalability**          | Handle volume spikes     |
+| **Analytics**            | Data-driven optimization |
+| **Compliance**           | Full conversation logs   |
 
 ## ROI Projection
 
@@ -256,7 +263,7 @@ Traditional Contact Center:
 
 With AI Platform (70% AI resolution):
   30 agents × $45K/year = $1.35M
-  + Platform license       = $XXX K
+  + AI platform            = $XXX K
 
   Annual Savings: ~$3M+ 💰
 ```
@@ -268,18 +275,21 @@ With AI Platform (70% AI resolution):
 ## Demo Scenarios
 
 ### Scenario 1: Text Chat with AI
+
 1. Customer asks about bill
 2. AI provides detailed response
 3. Customer asks to speak to human
 4. Seamless handoff demonstrated
 
 ### Scenario 2: Agent Dashboard
+
 1. Queue panel shows incoming chats
 2. Agent selects a conversation
 3. Copilot provides real-time suggestions
 4. Agent takes over from AI
 
 ### Scenario 3: Emergency Handling
+
 1. Customer mentions "gas smell"
 2. AI immediately provides safety instructions
 3. Auto-escalation to emergency team
@@ -314,7 +324,7 @@ With AI Platform (70% AI resolution):
 
 # 🎯 Summary
 
-## This Platform delivers:
+## The Platform delivers:
 
 1. **Instant AI Response** — No more hold music
 2. **Seamless Human Backup** — When complexity arises
@@ -324,7 +334,7 @@ With AI Platform (70% AI resolution):
 
 ## The Bottom Line
 
-> "The best of AI and human service, 
+> "The best of AI and human service,
 > working together in perfect harmony."
 
 ---
@@ -332,11 +342,13 @@ With AI Platform (70% AI resolution):
 # 📞 Contact & Questions
 
 ## Repository
+
 ```
-github.com/[your-org]/AI-Customer-Service-Platform
+github.com/[your-org]/Customer-Service-App
 ```
 
 ## Tech Stack Summary
+
 - Backend: Node.js + TypeScript + PostgreSQL + Redis
 - Frontend: React + Vite + Socket.io
 - AI: Retell (Voice) + Gemini (Chat) + OpenAI (Embeddings)
@@ -352,24 +364,23 @@ Questions?
 
 ## Key Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/chat` | POST | Send chat message |
-| `/api/chat/switch` | POST | Switch AI ↔ Human |
-| `/api/voice/web-call` | POST | Create voice call |
-| `/api/copilot/search` | POST | Search knowledge base |
-| `/api/analytics/dashboard` | GET | Get live metrics |
+| Endpoint                   | Method | Description           |
+| -------------------------- | ------ | --------------------- |
+| `/api/chat`                | POST   | Send chat message     |
+| `/api/chat/switch`         | POST   | Switch AI ↔ Human     |
+| `/api/voice/web-call`      | POST   | Create voice call     |
+| `/api/copilot/search`      | POST   | Search knowledge base |
+| `/api/analytics/dashboard` | GET    | Get live metrics      |
 
 ## Socket.io Events
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `transcript:update` | Server → Client | New message |
-| `copilot:suggestion` | Server → Client | AI suggestion |
-| `call:state_update` | Server → Client | Mode changed |
+| Event                 | Direction       | Description     |
+| --------------------- | --------------- | --------------- |
+| `transcript:update`   | Server → Client | New message     |
+| `copilot:suggestion`  | Server → Client | AI suggestion   |
+| `call:state_update`   | Server → Client | Mode changed    |
 | `call:request_switch` | Client → Server | Request handoff |
 
 ---
 
-*AI-Powered Intelligent Customer Service Platform*
-
+_Intelligent AI Customer Service Platform_

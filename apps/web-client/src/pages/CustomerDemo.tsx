@@ -14,7 +14,8 @@ export default function CustomerDemo() {
         {/* Header */}
         <header className={styles.header}>
           <h1 className={styles.title}>⚡ Utility Support</h1>
-          <p className={styles.subtitle}>How would you like to connect?</p>
+          <p className={styles.subtitle}>Choose your preferred way to connect</p>
+          <p className={styles.unifiedBadge}>✨ Unified AI Experience</p>
         </header>
 
         {/* Mode selector */}
@@ -47,7 +48,7 @@ export default function CustomerDemo() {
 
         {/* Footer */}
         <footer className={styles.footer}>
-          <p>Powered by <span className={styles.brand}>AI</span></p>
+          <p>🤖 <span className={styles.brand}>Same AI</span> for voice & text</p>
         </footer>
       </div>
     </div>

@@ -104,7 +104,7 @@ Instead of forwarding calls (which causes drops), we use a conference room where
 ## Project Structure
 
 ```
-customer-service-platform/
+Customer-Service-App/
 ├── apps/
 │   ├── backend/                      # Node.js API Server
 │   │   ├── src/
@@ -201,7 +201,7 @@ customer-service-platform/
 
 ```bash
 git clone <repo-url>
-cd customer-service-platform
+cd Customer-Service-App
 npm install
 ```
 

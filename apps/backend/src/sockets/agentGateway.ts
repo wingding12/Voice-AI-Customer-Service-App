@@ -3,6 +3,7 @@ import type { CopilotSuggestion, CallStateUpdate, TranscriptEntry } from 'shared
 import { executeSwitch } from '../services/voice/switchService.js';
 import { getDashboardMetrics } from '../services/analytics/analyticsService.js';
 import { sendHumanResponse } from '../services/chat/chatService.js';
+import { appendTranscript, getSession } from '../services/state/sessionStore.js';
 
 let io: SocketIOServer | null = null;
 
@@ -37,7 +38,6 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
       
       // Send session history to the joining agent
       try {
-        const { getSession } = await import('../services/state/sessionStore.js');
         const session = await getSession(callId);
         
         if (session) {
@@ -137,6 +137,62 @@ export function initializeAgentGateway(socketServer: SocketIOServer): void {
         });
       }
       // Success case: executeSwitch already emits events via emitCallStateUpdate and emitSwitchEvent
+    });
+
+    // ==================== Voice Call Transcript Forwarding ====================
+    // These events are sent from the customer's voice call to forward transcripts to agents
+
+    // Customer joins a voice call room
+    socket.on('voice:join', (data: { sessionId: string }) => {
+      socket.join(callRoom(data.sessionId));
+      console.log(`🎤 Customer joined voice call room: ${data.sessionId}`);
+      
+      // Add to queue for agent visibility
+      emitQueueAdd({
+        id: data.sessionId,
+        type: 'voice',
+        customerName: 'Voice Caller',
+        waitTime: 0,
+        preview: 'Voice call in progress...',
+        mode: 'AI_AGENT',
+        createdAt: Date.now(),
+      });
+    });
+
+    // Customer sends transcript update from Retell voice call
+    socket.on('voice:transcript', async (data: { 
+      sessionId: string; 
+      role: string; 
+      content: string; 
+      timestamp: number 
+    }) => {
+      const { sessionId, role, content, timestamp } = data;
+      
+      // Map Retell roles to our speaker types
+      const speaker = role === 'agent' ? 'AI' : 'CUSTOMER';
+      
+      console.log(`🎤 Voice transcript [${sessionId}] ${speaker}: ${content.substring(0, 50)}...`);
+      
+      // Save to session store
+      await appendTranscript(sessionId, speaker as 'AI' | 'CUSTOMER', content, timestamp);
+      
+      // Forward to all agents watching this call (via call room)
+      emitTranscriptUpdate(sessionId, {
+        speaker,
+        text: content,
+        timestamp,
+      });
+      
+      // Update queue preview
+      const previewText = speaker === 'AI' ? `AI: ${content}` : `Caller: ${content}`;
+      emitQueueMessagePreview(sessionId, previewText.substring(0, 60) + (previewText.length > 60 ? '...' : ''));
+    });
+
+    // Customer ends voice call
+    socket.on('voice:end', (data: { sessionId: string }) => {
+      console.log(`🎤 Voice call ended: ${data.sessionId}`);
+      emitCallEnd(data.sessionId);
+      emitQueueRemove(data.sessionId);
     });
     
     socket.on('disconnect', () => {

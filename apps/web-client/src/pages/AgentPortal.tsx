@@ -65,7 +65,7 @@ export default function AgentPortal() {
         <div className={styles.headerLeft}>
           <h1 className={styles.logo}>
             <span className={styles.logoIcon}>◈</span>
-            Agent Portal
+            Utility AI
           </h1>
           <span className={styles.badge}>Agent Dashboard</span>
         </div>
@@ -133,6 +133,18 @@ export default function AgentPortal() {
         {/* Center: Active Conversation */}
         <main className={styles.conversationPanel}>
           <ActiveCallBanner callState={callState} />
+          
+          {/* Voice call indicator */}
+          {callState.callId && !isChat && (
+            <div className={styles.voiceCallHeader}>
+              <span className={styles.voiceIcon}>📞</span>
+              <span className={styles.voiceLabel}>Live Voice Call</span>
+              <span className={styles.liveIndicator}>
+                <span className={styles.liveDot}></span>
+                LIVE
+              </span>
+            </div>
+          )}
           
           <div className={styles.transcriptWrapper}>
             <LiveTranscript entries={transcript} />

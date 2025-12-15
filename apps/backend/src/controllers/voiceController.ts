@@ -17,6 +17,9 @@ import {
   updateAgentPrompt,
   getAgentDetails,
   hasRetellConfig,
+  hasRetellChatConfig,
+  isChatConfigured,
+  createChatAgent,
   UTILITY_VOICE_AGENT_PROMPT,
   UTILITY_KNOWLEDGE_BASE,
   getFullVoiceAgentPrompt,
@@ -311,5 +314,72 @@ router.post("/agent/create-llm-dynamic", async (_req: Request, res: Response) =>
   }
 });
 
-export { router as voiceController };
+/**
+ * GET /api/voice/chat/status
+ *
+ * Check if Retell chat is configured
+ */
+router.get("/chat/status", async (_req: Request, res: Response) => {
+  res.json({
+    configured: isChatConfigured(),
+    chatAgentId: hasRetellChatConfig() ? process.env.RETELL_CHAT_AGENT_ID : null,
+    voiceAgentId: hasRetellConfig() ? process.env.RETELL_AGENT_ID : null,
+    unifiedExperience: hasRetellConfig() && hasRetellChatConfig(),
+    message: isChatConfigured() 
+      ? "Chat and voice use the same Retell AI for unified experience"
+      : "Set RETELL_CHAT_AGENT_ID to enable unified text/voice experience",
+  });
+});
 
+/**
+ * POST /api/voice/chat/create-agent
+ *
+ * Create a Retell chat agent using the same LLM as the voice agent
+ * This enables unified voice/text conversation with shared history
+ *
+ * Body:
+ * {
+ *   llmId: string  // The LLM ID to use (same as voice agent)
+ * }
+ */
+router.post("/chat/create-agent", async (req: Request, res: Response) => {
+  try {
+    if (!hasRetellConfig()) {
+      res.status(503).json({ error: "Retell not configured" });
+      return;
+    }
+
+    const { llmId } = req.body;
+
+    if (!llmId) {
+      res.status(400).json({
+        error: "llmId is required",
+        message: "Get the llmId from GET /api/voice/agent (use the same LLM as voice)",
+      });
+      return;
+    }
+
+    const chatAgent = await createChatAgent(llmId);
+
+    res.json({
+      success: true,
+      chatAgentId: chatAgent.agent_id,
+      chatAgentName: chatAgent.agent_name,
+      message: "Chat agent created! Add this to your .env file:",
+      envLine: `RETELL_CHAT_AGENT_ID=${chatAgent.agent_id}`,
+      nextSteps: [
+        "1. Add RETELL_CHAT_AGENT_ID to your .env file",
+        "2. Restart the server",
+        "3. Text chats will now use the same Retell bot as voice calls",
+      ],
+    });
+  } catch (error) {
+    console.error("❌ Create chat agent error:", error);
+    res.status(500).json({ 
+      error: "Failed to create chat agent",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+export { router as voiceController };

@@ -40,6 +40,18 @@
   font-size: 0.9375rem;
 }
 
+.unifiedBadge {
+  display: inline-block;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.15) 0%, rgba(0, 212, 170, 0.15) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--status-ai);
+}
+
 /* Mode selector */
 .modeSelector {
   flex-shrink: 0;
