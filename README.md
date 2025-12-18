@@ -1,4 +1,4 @@
-# 🚀 AI-Powered Customer Service Platform
+Voice AI Customer Service Platform
 
 > **Next-Generation Customer Support**: Intelligent AI agents that seamlessly collaborate with human representatives to deliver exceptional customer experiences at scale.
 
@@ -8,29 +8,9 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
 
-## 🎯 **Executive Summary**
 
-This platform revolutionizes customer service by combining cutting-edge AI technology with human expertise through a **Human-in-the-Loop (HITL)** architecture. Unlike traditional systems that force a choice between AI chatbots or human agents, our platform enables **seamless real-time switching** between both, preserving full conversation context without dropping calls or losing data.
-
-### **The Problem**
-
-- Pure AI solutions are fast but lack empathy and can't handle complex edge cases
-- Pure human support is expensive, slow to scale, and suffers from inconsistent quality
-- Traditional call forwarding systems drop context and frustrate customers
-
-### **Our Solution**
-
-- **70% of inquiries resolved by AI** with instant response times
-- **Intelligent escalation** to human agents when complexity requires it
-- **Zero context loss** during handoffs using our Conference Bridge pattern
-- **AI Copilot** that makes human agents 3x more effective
-- **Enterprise-grade** architecture built for scale and reliability
-
----
-
-## 🌟 **Key Features**
+##  **Key Features**
 
 <table>
 <tr>
@@ -47,7 +27,7 @@ This platform revolutionizes customer service by combining cutting-edge AI techn
 </td>
 <td width="50%">
 
-### 💬 **AI Text Chat**
+###  **AI Text Chat**
 
 - **Context-aware responses** using Gemini LLM
 - **Knowledge base integration** via RAG pipeline
@@ -60,7 +40,7 @@ This platform revolutionizes customer service by combining cutting-edge AI techn
 <tr>
 <td width="50%">
 
-### 👤 **AI Copilot for Agents**
+###  **AI Copilot for Agents**
 
 - **Real-time suggestions** as conversations flow
 - **Sentiment analysis** detects customer frustration
@@ -83,7 +63,7 @@ This platform revolutionizes customer service by combining cutting-edge AI techn
 </tr>
 </table>
 
-### 📊 **Enterprise Analytics**
+###  **Enterprise Analytics**
 
 - Real-time dashboard with live metrics
 - Switch tracking and resolution analytics
@@ -93,7 +73,7 @@ This platform revolutionizes customer service by combining cutting-edge AI techn
 
 ---
 
-## 🏗️ **Architecture**
+##  **Architecture**
 
 ### **Technology Stack**
 
@@ -193,7 +173,7 @@ This platform revolutionizes customer service by combining cutting-edge AI techn
 
 ### **The Conference Bridge Pattern**
 
-Our proprietary approach to seamless handoffs:
+The approach to seamless handoffs:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -213,11 +193,11 @@ Our proprietary approach to seamless handoffs:
 
 **Benefits:**
 
-- ✅ No call reconnection required
-- ✅ No context loss during handoff
-- ✅ Sub-second switching time
-- ✅ Customer doesn't hear any interruption
-- ✅ Scalable to multiple agents per call
+-  No call reconnection required
+-  No context loss during handoff
+-  Sub-second switching time
+-  Customer doesn't hear any interruption
+-  Scalable to multiple agents per call
 
 ---
 
@@ -247,7 +227,7 @@ cp .env.example .env
 npm run dev
 ```
 
-That's it! The app will start with:
+The app will start with:
 
 - **Frontend**: http://localhost:5173
 - **Backend**: http://localhost:3001
@@ -344,16 +324,6 @@ OPENAI_API_KEY=your_openai_api_key
 WEBHOOK_BASE_URL=https://your-domain.com
 ```
 
-### **What Works Without API Keys?**
-
-| Feature         | Without Keys        | With Keys       |
-| --------------- | ------------------- | --------------- |
-| Agent Dashboard | ✅ Full UI          | ✅ Full UI      |
-| Text Chat       | ⚠️ Basic responses  | ✅ Gemini AI    |
-| Voice Calls     | ❌ Not available    | ✅ Retell AI    |
-| AI Copilot      | ⚠️ Mock suggestions | ✅ Gemini AI    |
-| Analytics       | ⚠️ Mock data        | ✅ Real metrics |
-
 ### **Setting Up AI Services**
 
 <details>
@@ -398,7 +368,7 @@ curl -X POST http://localhost:3001/api/voice/agent/create-llm
 </details>
 
 <details>
-<summary><strong>📞 Telnyx (Optional - Phone Integration)</strong></summary>
+<summary><strong> Telnyx (Optional - Phone Integration)</strong></summary>
 
 1. Sign up at [telnyx.com](https://telnyx.com)
 2. Purchase a phone number
@@ -413,7 +383,7 @@ _Note: Phone integration is optional. Voice calls also work via browser WebRTC._
 
 ---
 
-## 📁 **Project Structure**
+##  **Project Structure**
 
 ```
 customer-service-app/
@@ -477,17 +447,17 @@ customer-service-app/
 
 ---
 
-## 🎨 **User Interface**
+##  **User Interface**
 
 ### **Agent Dashboard**
 
 The command center for human representatives:
 
-- **📋 Queue Panel** (Left): Live incoming requests with alerts
-- **💬 Transcript View** (Center): Real-time conversation display
-- **🤖 Copilot Panel** (Right): AI suggestions and knowledge search
-- **🎛️ Control Panel** (Bottom): Switch to/from AI, mute, hold, end
-- **📊 Metrics Footer**: Active calls, resolution times, performance
+- ** Queue Panel** (Left): Live incoming requests with alerts
+- ** Transcript View** (Center): Real-time conversation display
+- ** Copilot Panel** (Right): AI suggestions and knowledge search
+- ** Control Panel** (Bottom): Switch to/from AI, mute, hold, end
+- ** Metrics Footer**: Active calls, resolution times, performance
 
 ### **Customer Widget**
 
@@ -500,7 +470,7 @@ Dual-channel customer interface:
 
 ---
 
-## 🔌 **API Reference**
+##  **API Reference**
 
 ### **Core Endpoints**
 
@@ -539,7 +509,7 @@ Dual-channel customer interface:
 
 ---
 
-## 📊 **Analytics & Monitoring**
+##  **Analytics & Monitoring**
 
 ### **Real-time Metrics**
 
@@ -585,7 +555,7 @@ The platform tracks comprehensive analytics:
 
 ---
 
-## 🧪 **Testing**
+##  **Testing**
 
 ### **Test Scenarios**
 
@@ -614,17 +584,17 @@ npm run test:e2e
 
 ---
 
-## 🏢 **Use Cases**
+##  **Use Cases**
 
 ### **1. Utility Companies** (Primary)
 
 Our specialized domain with pre-built knowledge:
 
-- ⚡ **Billing inquiries**: Explain charges, rate tiers, high bills
-- 💰 **Payment support**: Set up payment plans, financial hardship
-- 🔌 **Outage reporting**: Status updates, estimated restoration
-- 🏠 **Service changes**: Start/stop/transfer service
-- ⚠️ **Emergency response**: Gas leak detection and escalation
+-  **Billing inquiries**: Explain charges, rate tiers, high bills
+-  **Payment support**: Set up payment plans, financial hardship
+-  **Outage reporting**: Status updates, estimated restoration
+-  **Service changes**: Start/stop/transfer service
+-  **Emergency response**: Gas leak detection and escalation
 
 **ROI**: 70% AI resolution rate = ~$3M annual savings for 100-agent call center
 
@@ -654,7 +624,7 @@ Our specialized domain with pre-built knowledge:
 
 ---
 
-## 🔒 **Security & Compliance**
+##  **Security & Compliance**
 
 ### **Data Protection**
 
@@ -680,21 +650,21 @@ Our specialized domain with pre-built knowledge:
 
 ---
 
-## 🛠️ **Development**
+##  **Development**
 
 ### **Troubleshooting**
 
 <details>
-<summary><strong>❌ Redis connection refused</strong></summary>
+<summary><strong> Redis connection refused</strong></summary>
 
 The app automatically falls back to in-memory storage. You'll see:
 
 ```
-⚠️  Redis unavailable - using in-memory storage
+  Redis unavailable - using in-memory storage
    (Start Redis with: docker-compose up -d)
 ```
 
-This is fine for development. For persistent sessions, start Docker:
+For persistent sessions, start Docker:
 
 ```bash
 docker-compose up -d
@@ -703,7 +673,7 @@ docker-compose up -d
 </details>
 
 <details>
-<summary><strong>❌ Database connection failed</strong></summary>
+<summary><strong> Database connection failed</strong></summary>
 
 If you see Prisma errors about database connection:
 
@@ -716,7 +686,7 @@ If you see Prisma errors about database connection:
 </details>
 
 <details>
-<summary><strong>❌ Voice calls not working</strong></summary>
+<summary><strong> Voice calls not working</strong></summary>
 
 Voice calls require Retell AI configuration:
 
@@ -731,7 +701,7 @@ Voice calls require Retell AI configuration:
 </details>
 
 <details>
-<summary><strong>❌ Text chat shows basic responses</strong></summary>
+<summary><strong> Text chat shows basic responses</strong></summary>
 
 For AI-powered responses, add your Gemini API key:
 
@@ -741,7 +711,7 @@ For AI-powered responses, add your Gemini API key:
 </details>
 
 <details>
-<summary><strong>❌ Port already in use</strong></summary>
+<summary><strong> Port already in use</strong></summary>
 
 Kill existing processes:
 
@@ -758,117 +728,14 @@ npm run dev
 
 </details>
 
-### **Commands**
 
-```bash
-# Development
-npm run dev              # Start all services
-npm run dev:backend      # Backend only (port 3001)
-npm run dev:web          # Frontend only (port 5173)
-
-# Database
-npm run db:generate      # Generate Prisma client
-npm run db:migrate       # Run migrations
-npm run db:seed          # Seed test data
-npm run db:studio        # Open Prisma Studio
-
-# Docker
-npm run docker:up        # Start PostgreSQL + Redis
-npm run docker:down      # Stop services
-
-# Build & Deploy
-npm run build            # Build all packages
-npm run clean            # Clean node_modules
-```
-
-### **Code Quality**
-
-- **TypeScript** for type safety across the stack
-- **Prisma** for type-safe database queries
-- **ESLint** for code linting
-- **Prettier** for code formatting (planned)
-- **Shared types** package for consistency
-
----
-
-## 🚢 **Deployment**
-
-### **Production Checklist**
-
-- [ ] Set `NODE_ENV=production` in `.env`
-- [ ] Use managed PostgreSQL (AWS RDS, Supabase, etc.)
-- [ ] Use managed Redis (AWS ElastiCache, Redis Cloud, etc.)
-- [ ] Set up proper domain and SSL certificates
-- [ ] Configure webhook URLs for production domain
-- [ ] Enable database connection pooling
-- [ ] Set up monitoring (Datadog, New Relic, etc.)
-- [ ] Configure backup strategy
-- [ ] Implement rate limiting
-- [ ] Set up CI/CD pipeline
-
-### **Recommended Hosting**
-
-| Service      | Recommendation                      |
-| ------------ | ----------------------------------- |
-| **Backend**  | Heroku, Render, AWS ECS, Railway    |
-| **Frontend** | Vercel, Netlify, Cloudflare Pages   |
-| **Database** | AWS RDS, Supabase, PlanetScale      |
-| **Redis**    | Redis Cloud, AWS ElastiCache        |
-| **Webhooks** | ngrok (dev), your production domain |
-
----
-
-## 📈 **Roadmap**
-
-### **v1.1 - Enhanced Features** (Q1)
-
-- [ ] Multi-language support (Spanish, French)
-- [ ] Mobile agent dashboard
-- [ ] Customer authentication
-- [ ] Advanced analytics dashboard
-- [ ] Custom branding options
-
-### **v1.2 - Enterprise Features** (Q2)
-
-- [ ] CRM integrations (Salesforce, HubSpot)
-- [ ] SSO authentication
-- [ ] Custom workflows
-- [ ] A/B testing framework
-- [ ] Advanced routing rules
-
-### **v2.0 - Platform Evolution** (Q3-Q4)
-
-- [ ] Video support
-- [ ] AI training mode (learn from human corrections)
-- [ ] Predictive routing
-- [ ] Proactive outreach
-- [ ] White-label SaaS offering
-
----
-
-## 🤝 **Contributing**
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### **Development Workflow**
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
----
-
-## 📄 **License**
+##  **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 **Acknowledgments**
-
-Built with cutting-edge technologies from:
+##  **Acknowledgments**
 
 - [Retell AI](https://retellai.com) - Voice AI platform
 - [Google Gemini](https://ai.google.dev) - LLM for chat & copilot
@@ -876,20 +743,8 @@ Built with cutting-edge technologies from:
 - [OpenAI](https://openai.com) - Embeddings for RAG
 - [Prisma](https://prisma.io) - Next-gen ORM
 
----
-
-## 📞 **Support & Contact**
-
-- **Documentation**: [Link to docs]
-- **Issues**: [GitHub Issues](https://github.com/your-org/repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/repo/discussions)
-
----
 
 <div align="center">
 
-**Built for the future of customer service** 🚀
-
-_Intelligent AI × Human Collaboration_
 
 </div>
